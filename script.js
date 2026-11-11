@@ -3,9 +3,9 @@
   Keep Discord bot tokens and private API keys out of this static website.
 */
 var LINK_CONFIG = {
-  discordInviteUrl: "https://discord.gg/gS5AQm9hzQ", // Example: https://discord.gg/your-invite
-  botInviteUrl: "https://discord.com/oauth2/authorize?client_id=1568360900648243281&permissions=8&integration_type=0&scope=bot", // Discord OAuth invite URL, if you want a separate bot link
-  drawCoasterUrl: "N/A" // Roblox game URL
+  discordInviteUrl: "https://discord.gg/gS5AQm9hzQ",
+  botInviteUrl: "https://discord.com/oauth2/authorize?client_id=1568360900648243281&permissions=8&integration_type=0&scope=bot",
+  drawCoasterUrl: "" // Add the Roblox game URL when it is available
 };
 
 (function () {

@@ -16,7 +16,7 @@ Use complete `https://` links. The site shows a helpful disabled state until eac
 
 1. Create a public GitHub repository, for example `potential-millionaires-site`.
 2. Upload `index.html`, `style.css`, `script.js`, and `CNAME` to the repository's top level. Keep the files together in the root.
-3. In the repository, open **Settings → Pages**. Choose **Deploy from a branch**, select **main** and **/(root)**, then save.
+3. In the repository, open **Settings → Pages** and set **Build and deployment → Source** to **GitHub Actions**, then save.
 4. In **Settings → Pages → Custom domain**, enter `potentialmillionaires.xyz` and save. Do this before changing the domain DNS records.
 5. At Namecheap, open **Domain List → Manage → Advanced DNS → Host Records** and add the records listed below. Save all changes.
 6. Wait for DNS to update. GitHub notes that DNS changes may take up to 24 hours. When GitHub Pages offers it, turn on **Enforce HTTPS**.

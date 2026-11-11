@@ -11,6 +11,8 @@
   const endpointStatus = document.getElementById("endpoint-status");
   const connectionBadge = document.getElementById("connection-badge");
   const storageKey = "pm-dashboard-backend-url";
+  const sessionKey = "pm-dashboard-session";
+  const DEFAULT_API_URL = ""; // Set the deployed backend's public HTTPS URL here so every moderator gets it automatically.
   let toastTimer;
 
   function showToast(message) {
@@ -39,8 +41,8 @@
       else item.removeAttribute("aria-current");
     });
 
-    const activeNav = navItems.find((item) => item.dataset.panelTarget === name);
-    if (currentLabel && activeNav) currentLabel.textContent = activeNav.textContent.trim().replace(/\s+—$/, "");
+    const panelLabels = { overview: "Overview", join: "Join with code", requests: "Member requests", players: "Players", moderation: "Moderation", server: "Server controls", shifts: "Shifts", logs: "Action logs", roles: "Role access", commands: "Command guide", settings: "Settings", help: "Help" };
+    if (currentLabel) currentLabel.textContent = panelLabels[name] || name;
     if (updateHash) history.replaceState(null, "", `#${name}`);
     if (sidebar) sidebar.classList.remove("is-open");
     if (menuButton) {
@@ -70,6 +72,13 @@
     });
   }
 
+  const returnedHash = new URLSearchParams(window.location.hash.slice(1));
+  const returnedSession = returnedHash.get("pm_session");
+  if (returnedSession) {
+    sessionStorage.setItem(sessionKey, returnedSession);
+    const destination = returnedHash.get("panel") || "join";
+    history.replaceState(null, "", `#${destination}`);
+  }
   const initialPanel = window.location.hash.slice(1).replace(/^panel-/, "");
   if (panels.some((panel) => panel.dataset.panel === initialPanel)) openPanel(initialPanel, false);
 
@@ -119,12 +128,12 @@
     });
   }
 
-  const savedEndpoint = localStorage.getItem(storageKey) || "";
+  const savedEndpoint = localStorage.getItem(storageKey) || DEFAULT_API_URL;
   if (endpointInput && savedEndpoint) endpointInput.value = savedEndpoint;
-  if (endpointStatus && savedEndpoint) endpointStatus.textContent = "Endpoint saved on this device. Check the connection to confirm it is reachable.";
+  if (endpointStatus && savedEndpoint) endpointStatus.textContent = "Shared backend endpoint loaded. Check the connection to confirm it is reachable.";
 
   function parseEndpoint() {
-    const raw = endpointInput?.value.trim() || "";
+    const raw = endpointInput?.value.trim() || localStorage.getItem(storageKey) || DEFAULT_API_URL;
     let url;
     try {
       url = new URL(raw);
@@ -135,6 +144,199 @@
     if (url.username || url.password || url.search || url.hash) throw new Error("Remove credentials, query parameters, and fragments from the endpoint URL.");
     return url.toString().replace(/\/$/, "");
   }
+
+  async function apiRequest(path, options = {}) {
+    const baseUrl = parseEndpoint();
+    const headers = { Accept: "application/json", ...(options.headers || {}) };
+    const session = sessionStorage.getItem(sessionKey);
+    if (session) headers.Authorization = `Bearer ${session}`;
+    if (options.body !== undefined) headers["Content-Type"] = "application/json";
+    const response = await fetch(`${baseUrl}${path}`, {
+      method: options.method || "GET",
+      mode: "cors",
+      credentials: "omit",
+      cache: "no-store",
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body)
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.message || result.error || `Backend returned HTTP ${response.status}.`);
+    return result;
+  }
+
+  const joinForm = document.getElementById("join-form");
+  const joinCodeInput = document.getElementById("join-code");
+  const joinStatus = document.getElementById("join-status");
+  if (joinCodeInput) joinCodeInput.addEventListener("input", () => {
+    joinCodeInput.value = joinCodeInput.value.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 20);
+  });
+
+  const discordLogin = document.getElementById("discord-login");
+  if (discordLogin) discordLogin.addEventListener("click", () => {
+    try {
+      const baseUrl = parseEndpoint();
+      const returnTo = `${window.location.origin}${window.location.pathname}#join`;
+      const signInUrl = new URL(`${baseUrl}/auth/discord/start`);
+      signInUrl.searchParams.set("return_to", returnTo);
+      window.location.assign(signInUrl.toString());
+    } catch (error) {
+      const message = "Ask the owner to connect the moderator backend in Settings first.";
+      const loginStatus = document.getElementById("discord-login-status");
+      if (loginStatus) loginStatus.textContent = message;
+      showToast(error.message || message);
+    }
+  });
+
+  if (joinForm) joinForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const code = joinCodeInput?.value.trim() || "";
+    if (!/^[A-Z0-9-]{3,20}$/.test(code)) {
+      if (joinStatus) joinStatus.textContent = "Use 3–20 letters, numbers, or hyphens.";
+      return;
+    }
+    if (!sessionStorage.getItem(sessionKey)) {
+      if (joinStatus) joinStatus.textContent = "Continue with Discord first, then submit your code.";
+      showToast("Sign in with Discord before requesting membership.");
+      return;
+    }
+    const submitButton = joinForm.querySelector('[type="submit"]');
+    submitButton.disabled = true;
+    if (joinStatus) joinStatus.textContent = "Sending your request securely…";
+    try {
+      const result = await apiRequest("/api/membership/requests", { method: "POST", body: { code } });
+      if (joinStatus) joinStatus.textContent = result.message || (result.status === "approved" ? "Approved. Staff access is active." : "Request sent. The owner will review it.");
+      showToast(result.status === "approved" ? "Your staff access was approved." : "Membership request sent to the owner.");
+    } catch (error) {
+      if (joinStatus) joinStatus.textContent = error.message;
+      showToast(error.message);
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+
+  async function loadMembershipRequests() {
+    const table = document.getElementById("join-requests-table");
+    const message = document.getElementById("owner-code-message");
+    if (!table) return;
+    table.innerHTML = '<tr><td colspan="4"><div class="empty-state table-empty"><b>Loading requests…</b></div></td></tr>';
+    try {
+      const result = await apiRequest("/api/membership/requests");
+      table.replaceChildren();
+      const requests = Array.isArray(result.requests) ? result.requests : [];
+      if (!requests.length) {
+        const row = document.createElement("tr");
+        row.innerHTML = '<td colspan="4"><div class="empty-state table-empty"><span class="empty-icon">✉</span><b>No pending requests</b><p>New join-code requests will appear here.</p></div></td>';
+        table.append(row);
+        return;
+      }
+      requests.forEach((request) => {
+        const row = document.createElement("tr");
+        const memberCell = document.createElement("td");
+        memberCell.textContent = `${request.discord_name || "Discord member"} · ${request.discord_id || "ID unavailable"}`;
+        const codeCell = document.createElement("td");
+        codeCell.textContent = request.code_label || "Moderator invite";
+        const dateCell = document.createElement("td");
+        dateCell.textContent = request.created_at ? new Date(request.created_at).toLocaleString() : "—";
+        const actionCell = document.createElement("td");
+        actionCell.className = "request-actions";
+        ["accept", "deny"].forEach((decision) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `button ${decision === "accept" ? "button-primary" : "button-outline"}`;
+          button.textContent = decision === "accept" ? "Accept" : "Deny";
+          button.addEventListener("click", async () => {
+            button.disabled = true;
+            try {
+              await apiRequest(`/api/membership/requests/${encodeURIComponent(request.id)}`, { method: "POST", body: { decision } });
+              showToast(decision === "accept" ? "Member approved." : "Request denied.");
+              loadMembershipRequests();
+            } catch (error) {
+              button.disabled = false;
+              showToast(error.message);
+            }
+          });
+          actionCell.append(button);
+        });
+        row.append(memberCell, codeCell, dateCell, actionCell);
+        table.append(row);
+      });
+      if (message) message.textContent = "Requests are visible only to an owner-authorized Discord session.";
+    } catch (error) {
+      table.replaceChildren();
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 4;
+      const state = document.createElement("div");
+      state.className = "empty-state table-empty";
+      const heading = document.createElement("b");
+      heading.textContent = error.message;
+      const detail = document.createElement("p");
+      detail.textContent = "Sign in as the owner and check that the backend is configured.";
+      state.append(heading, detail);
+      cell.append(state);
+      row.append(cell);
+      table.append(row);
+      if (message) message.textContent = "Owner access and backend connection are required to create or revoke codes.";
+    }
+  }
+
+  const createCodeButton = document.getElementById("create-join-code");
+  if (createCodeButton) createCodeButton.addEventListener("click", async () => {
+    createCodeButton.disabled = true;
+    try {
+      const result = await apiRequest("/api/membership/codes", { method: "POST", body: { purpose: "moderator" } });
+      const output = document.getElementById("generated-join-code");
+      if (output) {
+        output.textContent = result.code || "The backend did not return a code.";
+        output.hidden = false;
+      }
+      document.getElementById("copy-join-code").disabled = !result.code;
+      document.getElementById("revoke-join-code").disabled = false;
+      document.getElementById("join-code-status").textContent = "Active invite";
+      document.getElementById("owner-code-message").textContent = "Share this code privately. It is shown once; revoke it if it leaks.";
+    } catch (error) {
+      document.getElementById("owner-code-message").textContent = error.message;
+      showToast(error.message);
+    } finally {
+      createCodeButton.disabled = false;
+    }
+  });
+
+  const copyCodeButton = document.getElementById("copy-join-code");
+  if (copyCodeButton) copyCodeButton.addEventListener("click", async () => {
+    const code = document.getElementById("generated-join-code")?.textContent || "";
+    try {
+      await navigator.clipboard.writeText(code);
+      showToast("Moderator code copied.");
+    } catch {
+      showToast("Select the code text and copy it manually.");
+    }
+  });
+
+  const revokeCodeButton = document.getElementById("revoke-join-code");
+  if (revokeCodeButton) revokeCodeButton.addEventListener("click", async () => {
+    revokeCodeButton.disabled = true;
+    try {
+      await apiRequest("/api/membership/codes/revoke", { method: "POST", body: {} });
+      const output = document.getElementById("generated-join-code");
+      if (output) { output.textContent = "Invite revoked"; output.hidden = false; }
+      document.getElementById("copy-join-code").disabled = true;
+      document.getElementById("join-code-status").textContent = "No active invite";
+      document.getElementById("owner-code-message").textContent = "The previous code can no longer be used.";
+      showToast("Moderator invite revoked.");
+    } catch (error) {
+      revokeCodeButton.disabled = false;
+      showToast(error.message);
+    }
+  });
+
+  const refreshRequestsButton = document.getElementById("refresh-join-requests");
+  if (refreshRequestsButton) refreshRequestsButton.addEventListener("click", loadMembershipRequests);
+  const panelRequestsNav = navItems.find((item) => item.dataset.panelTarget === "requests");
+  if (panelRequestsNav) panelRequestsNav.addEventListener("click", loadMembershipRequests);
+  const panelJoinNav = navItems.find((item) => item.dataset.panelTarget === "join");
+  if (panelJoinNav && sessionStorage.getItem(sessionKey) && joinStatus) joinStatus.textContent = "Discord session found. Enter the owner’s code to request membership.";
+  if (initialPanel === "requests") loadMembershipRequests();
 
   const saveEndpoint = document.getElementById("save-endpoint");
   if (saveEndpoint) {

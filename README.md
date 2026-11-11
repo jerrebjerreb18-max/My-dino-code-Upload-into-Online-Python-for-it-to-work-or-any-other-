@@ -1,31 +1,31 @@
 # Potential Millionaires portfolio
 
-A static, responsive portfolio for Potential Millionaires. It uses plain HTML, CSS, and JavaScript and has no server, build step, private keys, or paid hosting requirement.
+A static, responsive portfolio for Potential Millionaires. It uses plain HTML, CSS, and JavaScript. It needs no server, build step, private keys, or paid hosting plan.
 
-## Add your project links
+## Project links
 
-Open `script.js` and fill in the `LINK_CONFIG` object near the top:
+Edit the `LINK_CONFIG` object near the top of `script.js`:
 
-- `discordInviteUrl`: your permanent Discord community invite.
-- `botInviteUrl`: optional Discord OAuth invite for the bot.
+- `discordInviteUrl`: the Discord community invite.
+- `botInviteUrl`: the bot's Discord OAuth invite.
 - `drawCoasterUrl`: the Roblox game page URL.
 
-Use complete `https://` links. The site shows a helpful disabled state until each link is configured. Never put a Discord bot token or private API key in these files; GitHub Pages publishes them publicly.
+Use full `https://` links. Never put a Discord bot token or private API key in these public files.
 
-## Publish with GitHub Pages
+## Finish GitHub Pages setup
 
-1. Create a public GitHub repository, for example `potential-millionaires-site`.
-2. Upload `index.html`, `style.css`, `script.js`, and `CNAME` to the repository's top level. Keep the files together in the root.
-3. In the repository, open **Settings → Pages** and set **Build and deployment → Source** to **GitHub Actions**, then save.
-4. In **Settings → Pages → Custom domain**, enter `potentialmillionaires.xyz` and save. Do this before changing the domain DNS records.
-5. At Namecheap, open **Domain List → Manage → Advanced DNS → Host Records** and add the records listed below. Save all changes.
-6. Wait for DNS to update. GitHub notes that DNS changes may take up to 24 hours. When GitHub Pages offers it, turn on **Enforce HTTPS**.
+The repository already has a GitHub Actions Pages workflow. Its latest deployment completed successfully.
 
-GitHub Pages is included at no extra monthly hosting charge for a public repository on GitHub Free. Your domain registration still renews through Namecheap at its renewal price.
+1. Open [repository Pages settings](https://github.com/jerrebjerreb18-max/My-dino-code-Upload-into-Online-Python-for-it-to-work-or-any-other-/settings/pages). Make sure **Build and deployment → Source** is **GitHub Actions**.
+2. In **Custom domain**, enter `potentialmillionaires.xyz` and click **Save**. The `CNAME` file does not set the custom domain when using a GitHub Actions workflow; this Pages setting is required.
+3. In Namecheap, open **Domain List → Manage → Advanced DNS → Host Records**. Remove the Namecheap parking record for `@` and any conflicting website records for `@` or `www`, then add the records below. Keep MX and mail-related TXT records if you use domain email.
+4. Wait for DNS to propagate. Then return to Pages settings and turn on **Enforce HTTPS** when GitHub enables it.
+
+GitHub Pages hosting is available at no extra monthly charge for a public repository on GitHub Free. Your domain registration still renews through Namecheap.
 
 ## Namecheap DNS records
 
-Use the records below for the apex domain and its `www` address. In Namecheap, set each record's TTL to **Automatic**.
+Set TTL to **Automatic**. Add four A records:
 
 | Type | Host | Value |
 | --- | --- | --- |
@@ -33,16 +33,13 @@ Use the records below for the apex domain and its `www` address. In Namecheap, s
 | A Record | `@` | `185.199.109.153` |
 | A Record | `@` | `185.199.110.153` |
 | A Record | `@` | `185.199.111.153` |
-| CNAME Record | `www` | `YOUR-GITHUB-USERNAME.github.io` |
+| CNAME Record | `www` | `jerrebjerreb18-max.github.io` |
 
-Replace `YOUR-GITHUB-USERNAME` with the account that owns the GitHub repository. Do not include the repository name or `https://` in the CNAME value. If you use email on this domain, leave its MX and mail-related TXT records in place. Remove conflicting URL Redirect, A, or CNAME records for `@` and `www` only if they point those website hosts somewhere else.
+Do not put the repository name or `https://` in the CNAME value. DNS changes can take up to 24 hours to propagate.
 
-Optional IPv6 records can also be added as AAAA records for host `@`:
+## Files
 
-- `2606:50c0:8000::153`
-- `2606:50c0:8001::153`
-- `2606:50c0:8002::153`
-- `2606:50c0:8003::153`
-
-This is a static portfolio only. It cannot run the Discord bot or perform private server-side actions; keep those on your bot host or a backend service.
-
+- `index.html`: site content and layout
+- `style.css`: responsive visual design
+- `script.js`: navigation, interactions, and project links
+- `.github/workflows/deploy.yml`: deploys the site to GitHub Pages on pushes to `main`

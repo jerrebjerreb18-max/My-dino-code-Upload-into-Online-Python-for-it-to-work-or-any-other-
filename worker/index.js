@@ -288,7 +288,13 @@ async function discordOAuthCallback(request, env) {
   const form = new URLSearchParams({ client_id: clientId, client_secret: clientSecret, grant_type: "authorization_code", code, redirect_uri: redirectUri });
   const tokenResponse = await fetch(DISCORD_API + "/oauth2/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" }, body: form, signal: AbortSignal.timeout(12000) });
   const tokenBody = parseJson(await tokenResponse.text(), {});
-  if (!tokenResponse.ok || !tokenBody.access_token) return html("Discord could not complete sign-in. Check the exact callback URL in the Developer Portal and the backend OAuth secret.");
+  if (!tokenResponse.ok || !tokenBody.access_token) {
+    const knownErrors = new Set(["invalid_client", "invalid_grant", "invalid_request", "unauthorized_client", "unsupported_grant_type"]);
+    const reportedError = String(tokenBody.error || "").toLowerCase();
+    const safeError = knownErrors.has(reportedError) ? reportedError : "unknown_error";
+    console.error("Discord OAuth token exchange rejected", { status: tokenResponse.status, error: safeError });
+    return html("Discord rejected the OAuth code exchange (HTTP " + tokenResponse.status + "; " + safeError + "). Start a fresh sign-in from the dashboard.");
+  }
   const profile = await discordRequest("/users/@me", tokenBody.access_token, "Bearer");
   const userId = String(profile.id || "");
   if (!/^\d{15,22}$/.test(userId)) return html("Discord did not return a valid account ID.");

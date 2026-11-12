@@ -3,135 +3,42 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#111713">
-  <meta name="description" content="Potential Millionaires ER:LC server control center.">
-  <title>ER:LC Control Center — Potential Millionaires</title>
-  <link rel="stylesheet" href="dashboard.css">
-  <link rel="stylesheet" href="cookie-notice.css">
-  <script src="cookie-notice.js" defer></script>
-  <script src="dashboard.js" defer></script>
+  <meta name="theme-color" content="#10141b">
+  <meta http-equiv="refresh" content="1;url=https://script.google.com/macros/s/AKfycbL74eRZCJDtjWNDVxWx1o5CNplSWCyQndnaeN-DkXnjylmOkxF6r-Sz2jgxZW0/exec">
+  <title>Opening ER:LC Control · Potential Millionaires</title>
+  <style>
+    :root{color-scheme:dark;font:16px/1.6 Inter,"Segoe UI",system-ui,sans-serif;color:#f2f5f8;background:#10141b}
+    *{box-sizing:border-box}body{min-height:100vh;margin:0;display:grid;place-items:center;padding:24px}
+    main{width:min(100%,620px);padding:32px;border:1px solid #293340;border-radius:18px;background:#171d26;box-shadow:0 24px 80px #0006}
+    .mark{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#c8f06a;color:#10141b;font-weight:900}
+    .eyebrow{margin:24px 0 8px;color:#79e0bd;font:700 10px ui-monospace,Consolas,monospace;letter-spacing:.14em;text-transform:uppercase}
+    h1{margin:0;font-size:clamp(26px,6vw,38px);letter-spacing:-.04em;line-height:1.12}
+    p{color:#aab6c2;font-size:14px}
+    .note{padding:14px;border:1px solid #31423b;border-radius:10px;background:#121b1a;color:#c6d1cc;font-size:12px}
+    .note strong{color:#79e0bd}
+    a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin-top:12px;padding:0 16px;border-radius:9px;background:#c8f06a;color:#10141b;font-size:13px;font-weight:750;text-decoration:none}
+    a:hover{filter:brightness(1.06)}a:focus-visible{outline:2px solid #79e0bd;outline-offset:3px}
+    footer{margin-top:24px;color:#687685;font-size:11px}footer a{min-height:auto;margin:0;padding:0;background:none;color:#95a2af;font:inherit;text-decoration:underline}
+  </style>
 </head>
 <body>
-  <a class="skip-link" href="#dashboard-main">Skip to dashboard</a>
-  <header class="topbar">
-    <a class="brand" href="index.html" aria-label="Potential Millionaires home"><span class="brand-mark">PM</span><span>Potential Millionaires<small>ER:LC CONTROL CENTER</small></span></a>
-    <button class="server-switch" type="button" aria-label="Selected server"><span class="server-led"></span><span><b>PVP I NO RULES I fre ranks</b><small>PRIVATE SERVER</small></span><span class="chevron">⌄</span></button>
-    <div class="topbar-actions"><span class="connection-badge" id="connection-badge"><i></i> API NOT CONNECTED</span><a class="home-link" href="index.html">Studio site ↗</a><button class="mobile-menu" id="mobile-menu" type="button" aria-expanded="false" aria-controls="sidebar" aria-label="Open dashboard menu">☰</button></div>
-  </header>
-
-  <div class="app-shell">
-    <aside class="sidebar" id="sidebar" aria-label="Dashboard panels">
-      <p class="sidebar-label">SERVER</p>
-      <button class="nav-item is-active" data-panel-target="overview" aria-current="page"><span>◫</span> Overview</button>
-      <button class="nav-item" data-panel-target="players"><span>♙</span> Players <small>—</small></button>
-      <button class="nav-item" data-panel-target="moderation"><span>⚑</span> Moderation</button>
-      <button class="nav-item" data-panel-target="server"><span>⌘</span> Server controls</button>
-      <p class="sidebar-label">TEAM</p>
-      <button class="nav-item" data-panel-target="join"><span>＋</span> Join with code</button>
-      <button class="nav-item" data-panel-target="requests"><span>✉</span> Member requests</button>
-      <button class="nav-item" data-panel-target="shifts"><span>◷</span> Shifts</button>
-      <button class="nav-item" data-panel-target="logs"><span>▤</span> Action logs</button>
-      <button class="nav-item" data-panel-target="roles"><span>♧</span> Role access</button>
-      <p class="sidebar-label">TOOLS</p>
-      <button class="nav-item" data-panel-target="commands"><span>/</span> Command guide</button>
-      <button class="nav-item" data-panel-target="settings"><span>⚙</span> Settings</button>
-      <button class="nav-item" data-panel-target="help"><span>?</span> Help</button>
-      <div class="sidebar-bottom"><div class="backend-note"><i></i><span><b>Preview mode</b><small>Connect the bot backend for live data.</small></span></div><a href="index.html">← Back to Potential Millionaires</a></div>
-    </aside>
-
-    <main class="main-content" id="dashboard-main">
-      <div class="breadcrumb">Potential Millionaires <span>/</span> ER:LC <span>/</span> <b id="current-panel-label">Overview</b></div>
-
-      <section class="panel is-visible" id="panel-overview" data-panel="overview" aria-labelledby="overview-title">
-        <div class="page-heading"><div><p class="eyebrow">PRIVATE SERVER OPERATIONS</p><h1 id="overview-title">Server overview</h1><p class="subheading">A clear view of your ER:LC server, staff activity, and moderation tools.</p></div><button class="button button-outline" data-open-panel="settings">Connect bot API <span>↗</span></button></div>
-        <div class="notice notice-warn"><span class="notice-icon">!</span><div><b>Preview mode</b><p>The dashboard layout is ready, but live player data and commands need a secure bot backend. Keep the ER:LC server key on the bot host—never in this website.</p></div><button class="notice-link" data-open-panel="settings">Set up connection</button></div>
-        <div class="stat-grid">
-          <article class="stat-card"><div class="stat-top"><span>SERVER STATUS</span><i class="status-dot status-offline"></i></div><strong id="server-status-value">Not connected</strong><small>Connect the bot backend to check status</small></article>
-          <article class="stat-card"><div class="stat-top"><span>PLAYERS ONLINE</span><span class="stat-icon">♙</span></div><strong>—</strong><small>Live count appears when connected</small></article>
-          <article class="stat-card"><div class="stat-top"><span>STAFF ON SHIFT</span><span class="stat-icon">◷</span></div><strong>—</strong><small>Shift tracking needs bot connection</small></article>
-          <article class="stat-card"><div class="stat-top"><span>MOD ACTIONS TODAY</span><span class="stat-icon">⚑</span></div><strong>—</strong><small>Actions will appear in the audit log</small></article>
-        </div>
-        <div class="overview-grid">
-          <article class="surface-card"><div class="card-heading"><div><p class="eyebrow">QUICK ACCESS</p><h2>Common tasks</h2></div></div><div class="quick-grid"><button class="quick-action" data-open-panel="players"><span class="quick-icon">♙</span><b>Check players</b><small>View who is in the server</small><span class="quick-arrow">↗</span></button><button class="quick-action" data-open-panel="moderation"><span class="quick-icon">⚑</span><b>Moderation</b><small>Review safe action forms</small><span class="quick-arrow">↗</span></button><button class="quick-action" data-open-panel="shifts"><span class="quick-icon">◷</span><b>Staff shifts</b><small>Open shift tracking</small><span class="quick-arrow">↗</span></button><button class="quick-action" data-open-panel="logs"><span class="quick-icon">▤</span><b>Action logs</b><small>Review recorded actions</small><span class="quick-arrow">↗</span></button></div></article>
-          <article class="surface-card activity-card"><div class="card-heading"><div><p class="eyebrow">RECENT ACTIVITY</p><h2>Audit feed</h2></div><button class="plain-link" data-open-panel="logs">View logs ↗</button></div><div class="empty-state"><span class="empty-icon">▤</span><b>No activity loaded</b><p>Connect the private bot backend to see server events and staff actions.</p></div></article>
-        </div>
-      </section>
-
-      <section class="panel" id="panel-join" data-panel="join" aria-labelledby="join-title" hidden>
-        <div class="page-heading"><div><p class="eyebrow">STAFF ACCESS</p><h1 id="join-title">Join the moderation team</h1><p class="subheading">Sign in with Discord, then enter the invite code from the server owner.</p></div><span class="small-status">Code required</span></div>
-        <div class="notice notice-info"><span class="notice-icon">i</span><div><b>Joining sends a request</b><p>The owner reviews your Discord account before approving moderator access. The code alone does not grant permissions. If your Discord role is linked by the owner, the backend may approve you automatically.</p></div></div>
-        <div class="join-layout">
-          <article class="surface-card join-card"><p class="eyebrow">STEP 1 · VERIFY YOUR ACCOUNT</p><h2>Connect Discord</h2><p class="muted-copy">This identifies the person requesting access so staff actions can be tied to the right Discord account.</p><button class="button button-outline" id="discord-login" type="button">Continue with Discord <span>↗</span></button><p class="helper-line" id="discord-login-status" role="status">Secure sign-in becomes available when the moderator backend is connected.</p></article>
-          <article class="surface-card join-card"><p class="eyebrow">STEP 2 · ENTER YOUR INVITE</p><h2>Join with a code</h2><form id="join-form" class="form-grid"><label class="full-field">Moderator join code<input id="join-code" name="code" autocomplete="one-time-code" autocapitalize="characters" minlength="3" maxlength="20" pattern="[A-Za-z0-9-]{3,20}" placeholder="Example: ABC-123" required><small>3–20 letters, numbers, or hyphens.</small></label><div class="form-actions"><button class="button button-primary" type="submit">Request to join</button></div></form><p class="helper-line" id="join-status" role="status">You must sign in with Discord before sending a request.</p></article>
-        </div>
-        <article class="surface-card section-card"><p class="eyebrow">WHAT HAPPENS NEXT</p><div class="join-steps"><div><b>01</b><span><strong>Submit the code</strong><small>The code links your request to this server.</small></span></div><div><b>02</b><span><strong>Owner review</strong><small>The owner accepts or denies your request in Member Requests.</small></span></div><div><b>03</b><span><strong>Open staff tools</strong><small>After approval, access follows the Discord roles configured for your account.</small></span></div></div></article>
-      </section>
-
-      <section class="panel" id="panel-requests" data-panel="requests" aria-labelledby="requests-title" hidden>
-        <div class="page-heading"><div><p class="eyebrow">MEMBERS</p><h1 id="requests-title">Member requests</h1><p class="subheading">Review moderator access requests and manage the invite code you share with applicants.</p></div><span class="small-status">Owner access required</span></div>
-        <div class="notice notice-warn"><span class="notice-icon">!</span><div><b>Only the server owner can manage invites</b><p>Each request is tied to a Discord login. Approving a request adds the member to the staff access list; it does not give them Administrator permissions automatically.</p></div></div>
-        <article class="surface-card"><div class="card-heading"><div><p class="eyebrow">INVITE CODE</p><h2>Moderator join code</h2></div><span class="read-pill" id="join-code-status">Backend required</span></div><p class="muted-copy">Generate or rotate a code through the protected backend. Share it privately with applicants and revoke it if it leaks.</p><div class="form-actions"><button class="button button-primary" id="create-join-code" type="button">Create code</button><button class="button button-outline" id="copy-join-code" type="button" disabled>Copy code</button><button class="button button-outline" id="revoke-join-code" type="button" disabled>Revoke code</button></div><p class="helper-line" id="owner-code-message" role="status">The website needs a secure backend before codes can be created.</p><output class="generated-code" id="generated-join-code" hidden></output></article>
-        <article class="surface-card section-card"><div class="card-heading"><div><p class="eyebrow">INBOX</p><h2>Pending requests</h2></div><button class="button button-outline" id="refresh-join-requests" type="button">Refresh</button></div><div class="table-wrap"><table><thead><tr><th>DISCORD MEMBER</th><th>CODE</th><th>REQUESTED</th><th>DECISION</th></tr></thead><tbody id="join-requests-table"><tr><td colspan="4"><div class="empty-state table-empty"><span class="empty-icon">✉</span><b>No requests loaded</b><p>Sign in as the owner and connect the moderator backend to review requests.</p></div></td></tr></tbody></table></div></article>
-      </section>
-
-      <section class="panel" id="panel-players" data-panel="players" aria-labelledby="players-title" hidden>
-        <div class="page-heading"><div><p class="eyebrow">LIVE SERVER DATA</p><h1 id="players-title">Players</h1><p class="subheading">Search the current player list and open a profile before taking action.</p></div><span class="small-status">API required</span></div>
-        <article class="surface-card"><div class="toolbar"><label class="search-box"><span>⌕</span><input id="player-search" type="search" placeholder="Search player or Roblox ID" aria-label="Search players"></label><button class="button button-outline" disabled>Refresh list</button></div><div class="table-wrap"><table><thead><tr><th>PLAYER</th><th>ROBLOX ID</th><th>TEAM</th><th>SESSION</th><th></th></tr></thead><tbody id="players-table"><tr><td colspan="5"><div class="empty-state table-empty"><span class="empty-icon">♙</span><b>Player list not connected</b><p>Live players appear here after the bot backend is connected.</p></div></td></tr></tbody></table></div></article>
-        <p class="helper-line">Player IDs and team data come from the connected server API. No sample players are shown as real data.</p>
-      </section>
-
-      <section class="panel" id="panel-moderation" data-panel="moderation" aria-labelledby="moderation-title" hidden>
-        <div class="page-heading"><div><p class="eyebrow">STAFF TOOLS</p><h1 id="moderation-title">Moderation</h1><p class="subheading">Every action requires a target and a reason. Confirm evidence and follow your server rules.</p></div><span class="small-status">Actions locked</span></div>
-        <div class="moderation-layout"><article class="surface-card"><div class="card-heading"><div><p class="eyebrow">ACTION BUILDER</p><h2>Prepare a moderation action</h2></div></div><form id="action-form" class="form-grid"><label>Action<select id="action-type"><option value="ban">Ban</option><option value="kick">Kick</option><option value="warn">Warn</option><option value="unban">Unban</option></select></label><label>Roblox user ID<input id="action-player-id" inputmode="numeric" placeholder="Numeric Roblox ID" required></label><label class="full-field">Reason<textarea id="action-reason" rows="3" placeholder="Describe the rule and evidence" required></textarea></label><div class="form-footnote"><span>ⓘ</span> A reason is required and will be included in the audit log.</div><div class="form-actions"><button class="button button-primary" type="button" id="preview-action">Preview action</button><button class="button button-danger" type="submit" disabled>Send to server</button></div></form></article><aside class="surface-card evidence-card"><p class="eyebrow">SAFE MODERATION</p><h2>Review before action</h2><ul class="check-list"><li>Confirm the correct Roblox ID.</li><li>Use specific, factual evidence.</li><li>Record links, screenshots, or logs.</li><li>Ask a higher staff member when unsure.</li></ul><div class="policy-chip">No automatic bans or mutes</div><p class="muted-copy">The backend must check the member's Discord role before accepting any action.</p></aside></div>
-      </section>
-
-      <section class="panel" id="panel-server" data-panel="server" aria-labelledby="server-title" hidden>
-        <div class="page-heading"><div><p class="eyebrow">ER:LC SERVER</p><h1 id="server-title">Server controls</h1><p class="subheading">Read status, inspect the command queue, and prepare server announcements.</p></div><span class="small-status">API required</span></div>
-        <div class="server-grid"><article class="surface-card"><p class="eyebrow">CONNECTION</p><h2>Private server API</h2><p class="muted-copy">The website never stores your ER:LC key. Your bot host must call the ER:LC API and return only the data this dashboard needs.</p><button class="button button-outline" data-open-panel="settings">Configure backend</button></article><article class="surface-card"><p class="eyebrow">READ-ONLY</p><h2>Status & player check</h2><p class="muted-copy">Server status and player list can be available to everyone. The bot should enforce this separately from moderation permissions.</p><div class="read-pill">Status: waiting for connection</div></article><article class="surface-card command-composer"><p class="eyebrow">COMMAND CONSOLE</p><h2>Prepare a server command</h2><label>Command text<input id="server-command" placeholder="Enter a supported ER:LC command" autocomplete="off"></label><p class="helper-line">The backend should validate commands against the server's allowed command list.</p><button class="button button-outline" id="preview-server-command" type="button">Preview only</button><pre id="command-preview" class="command-preview" hidden></pre></article></div>
-      </section>
-
-      <section class="panel" id="panel-shifts" data-panel="shifts" aria-labelledby="shifts-title" hidden>
-        <div class="page-heading"><div><p class="eyebrow">STAFF ACTIVITY</p><h1 id="shifts-title">Shift tracking</h1><p class="subheading">Staff can start and end shifts; the bot records timestamps and total time.</p></div><span class="small-status">Not connected</span></div>
-        <div class="shift-grid"><article class="surface-card shift-current"><p class="eyebrow">YOUR CURRENT SHIFT</p><strong>Not clocked in</strong><p class="muted-copy">Shift actions require a verified Discord account and the configured staff role.</p><div class="form-actions"><button class="button button-primary" disabled>Start shift</button><button class="button button-outline" disabled>End shift</button></div></article><article class="surface-card"><p class="eyebrow">THIS WEEK</p><h2>Shift summary</h2><div class="summary-row"><span>Completed shifts</span><b>—</b></div><div class="summary-row"><span>Total staff hours</span><b>—</b></div><div class="summary-row"><span>Staff on duty</span><b>—</b></div></article></div>
-        <article class="surface-card section-card"><div class="card-heading"><div><p class="eyebrow">SHIFT HISTORY</p><h2>Recent staff shifts</h2></div><button class="button button-outline" disabled>Export CSV</button></div><div class="empty-state"><span class="empty-icon">◷</span><b>No shift records loaded</b><p>Records will appear after the bot backend is connected.</p></div></article>
-      </section>
-
-      <section class="panel" id="panel-logs" data-panel="logs" aria-labelledby="logs-title" hidden>
-        <div class="page-heading"><div><p class="eyebrow">TRANSPARENCY</p><h1 id="logs-title">Action logs</h1><p class="subheading">Review moderation, command, shift, and connection events.</p></div><span class="small-status">Audit feed offline</span></div>
-        <article class="surface-card"><div class="toolbar"><label class="search-box"><span>⌕</span><input id="log-search" type="search" placeholder="Search staff, target, or reason" aria-label="Search logs"></label><select class="compact-select" aria-label="Filter logs"><option>All events</option><option>Moderation</option><option>Commands</option><option>Shifts</option><option>Connection</option></select><button class="button button-outline" disabled>Export</button></div><div class="empty-state"><span class="empty-icon">▤</span><b>No logs loaded</b><p>Every successful server action should be logged by the bot backend.</p></div></article>
-      </section>
-
-      <section class="panel" id="panel-roles" data-panel="roles" aria-labelledby="roles-title" hidden>
-        <div class="page-heading"><div><p class="eyebrow">ACCESS CONTROL</p><h1 id="roles-title">Role access</h1><p class="subheading">Choose existing Discord roles and limit commands by staff responsibility.</p></div><span class="small-status">Role sync required</span></div>
-        <div class="notice notice-info"><span class="notice-icon">i</span><div><b>Role checks belong on the bot</b><p>A browser panel cannot protect server commands by itself. The backend must verify the Discord user and role on every request.</p></div></div>
-        <article class="surface-card"><div class="card-heading"><div><p class="eyebrow">ROLE MAPPING</p><h2>Choose server roles</h2></div><button class="button button-outline" disabled>Load Discord roles</button></div><div class="role-row"><div><b>Read-only access</b><small>Server status, player count</small></div><select disabled><option>Everyone</option></select></div><div class="role-row"><div><b>Staff tools</b><small>Shift tracking, logs, warnings</small></div><select disabled><option>Connect Discord to choose an existing role</option></select></div><div class="role-row"><div><b>Moderation actions</b><small>Kick, ban, unban, severe actions</small></div><select disabled><option>Connect Discord to choose an existing role</option></select></div><div class="role-row"><div><b>Administrator settings</b><small>Backend and permission configuration</small></div><select disabled><option>Administrator</option></select></div><p class="helper-line">Role IDs and permissions have not been fetched yet. Connect the authenticated bot backend to populate these selectors.</p></article>
-      </section>
-
-      <section class="panel" id="panel-commands" data-panel="commands" aria-labelledby="commands-title" hidden>
-        <div class="page-heading"><div><p class="eyebrow">REFERENCE</p><h1 id="commands-title">Command guide</h1><p class="subheading">A clear command catalog for the web dashboard and Discord bot.</p></div></div>
-        <div class="command-categories"><article class="surface-card"><p class="eyebrow">READ-ONLY</p><h2>Server information</h2><div class="command-row"><code>/server status</code><span>Check server status</span><b>Everyone</b></div><div class="command-row"><code>/check players</code><span>View current players</span><b>Everyone</b></div><div class="command-row"><code>/player lookup</code><span>Look up a Roblox ID</span><b>Staff</b></div></article><article class="surface-card"><p class="eyebrow">MODERATION</p><h2>Player actions</h2><div class="command-row"><code>/erlc ban</code><span>Ban ID with reason</span><b>Mod role</b></div><div class="command-row"><code>/erlc kick</code><span>Kick ID with reason</span><b>Mod role</b></div><div class="command-row"><code>/erlc warn</code><span>Record a warning</span><b>Staff role</b></div><div class="command-row"><code>/erlc unban</code><span>Remove a server ban</span><b>HR role</b></div></article><article class="surface-card"><p class="eyebrow">STAFF</p><h2>Shifts & records</h2><div class="command-row"><code>/shift start</code><span>Start a shift timer</span><b>Staff role</b></div><div class="command-row"><code>/shift end</code><span>End and log a shift</span><b>Staff role</b></div><div class="command-row"><code>/erlc logs</code><span>Review server actions</span><b>Staff role</b></div><div class="command-row"><code>/help</code><span>Show available bot commands</span><b>Everyone</b></div></article><article class="surface-card"><p class="eyebrow">SERVER TOOLS</p><h2>Additional actions</h2><div class="command-row"><code>Command console</code><span>Run an allowed ER:LC command</span><b>Configured role</b></div><div class="command-row"><code>Announcements</code><span>Send a server announcement</span><b>Staff role</b></div><p class="helper-line">The bot backend must confirm the exact supported command syntax before enabling these actions.</p></article></div>
-      </section>
-
-      <section class="panel" id="panel-settings" data-panel="settings" aria-labelledby="settings-title" hidden>
-        <div class="page-heading"><div><p class="eyebrow">CONFIGURATION</p><h1 id="settings-title">Settings</h1><p class="subheading">Connect the site to your bot without placing server secrets in public files.</p></div></div>
-        <div class="settings-grid"><article class="surface-card"><p class="eyebrow">BOT BACKEND</p><h2>Connection endpoint</h2><p class="muted-copy">Enter the HTTPS endpoint of your private bot service. The ER:LC server key must stay in the bot host's environment settings.</p><label class="full-field">Backend URL<input id="backend-url" type="url" placeholder="https://your-private-bot-api.example"></label><div class="form-actions"><button class="button button-outline" id="save-endpoint" type="button">Save endpoint on this device</button><button class="button button-primary" id="test-endpoint" type="button">Check connection</button></div><p class="helper-line" id="endpoint-status" role="status">No endpoint saved.</p></article><article class="surface-card"><p class="eyebrow">SECURITY</p><h2>Key handling</h2><ul class="check-list"><li>Never put the ER:LC server key in HTML, CSS, JavaScript, or a public repository.</li><li>Authenticate each dashboard user through Discord on the backend.</li><li>Check role permissions on every command request.</li><li>Log moderation actions with staff, target, reason, and time.</li></ul></article></div>
-        <article class="surface-card section-card"><p class="eyebrow">SITE STATUS</p><h2>Current setup</h2><div class="summary-row"><span>Static website</span><b>Online</b></div><div class="summary-row"><span>ER:LC backend</span><b>Not configured</b></div><div class="summary-row"><span>Live commands</span><b>Locked until backend is connected</b></div></article>
-      </section>
-
-      <section class="panel" id="panel-help" data-panel="help" aria-labelledby="help-title" hidden>
-        <div class="page-heading"><div><p class="eyebrow">SUPPORT</p><h1 id="help-title">Help center</h1><p class="subheading">How the dashboard panels work and what is needed to connect them.</p></div></div>
-        <div class="help-grid"><details open><summary>How does a moderator join?</summary><p>Sign in with Discord, enter the code from the owner, then wait for the owner to approve the request in Member Requests. The backend must verify the Discord account and code.</p></details><details><summary>Why can't another person open the backend?</summary><p>If the Apps Script web app is deployed as “Only myself,” Google blocks other people before the join-code form can run. The backend needs public reachability plus server-side Discord and code checks; a page-only gate cannot protect commands.</p></details><details><summary>Why is the player list empty?</summary><p>The website is static right now. It needs a backend route that reads the ER:LC API through your bot and returns player data.</p></details><details><summary>Where does the server key go?</summary><p>Keep it in the bot host's environment variables. Never paste it into this website, the browser, or GitHub.</p></details><details><summary>How do roles protect commands?</summary><p>The backend must authenticate the Discord user and check their current server roles before it executes every command.</p></details><details><summary>Why are moderation buttons disabled?</summary><p>They stay disabled until a secure bot backend is connected. Ban and kick actions should always require a target, reason, and staff authorization.</p></details><details><summary>How do I add a new panel?</summary><p>Add a navigation button with a matching panel ID in dashboard.html, then add its behavior in dashboard.js.</p></details><details><summary>Where do site changes go?</summary><p>Commit changes to the main branch of the GitHub repository. GitHub Actions publishes the updated site.</p></details></div>
-        <div class="help-footer"><span>Need staff help?</span><a href="index.html#community">Open the Discord community ↗</a></div>
-      </section>
-
-      <div class="toast" id="dashboard-toast" role="status" aria-live="polite"></div>
-    </main>
-  </div>
-  <footer class="legal-footer" aria-label="Legal and studio links"><a href="terms.html">Terms of Service</a><a href="privacy.html">Privacy Policy</a><button class="cookie-settings-link" type="button" data-open-cookie-notice>Cookie choices</button><a href="index.html">Potential Millionaires</a></footer>
-  <aside class="cookie-notice" id="cookie-notice" role="region" aria-label="Cookie and storage choices" aria-describedby="cookie-notice-copy" hidden>
-    <div class="cookie-notice-copy"><p class="cookie-notice-kicker">PRIVACY CHOICES</p><p id="cookie-notice-copy">We use necessary browser storage for sign-in. If you choose, we can also remember dashboard preferences such as your backend address. Analytics and advertising trackers are off. Read the <a href="privacy.html#cookies">Privacy Policy</a>.</p></div>
-    <div class="cookie-notice-actions"><button class="cookie-button cookie-button-primary" type="button" data-cookie-choice="preferences">Accept preferences</button><button class="cookie-button cookie-button-secondary" type="button" data-cookie-choice="essential">Essential only</button></div>
-  </aside>
+  <main>
+    <div class="mark" aria-hidden="true">PM</div>
+    <p class="eyebrow">Potential Millionaires · ER:LC</p>
+    <h1>Opening the secure control center.</h1>
+    <p>ER:LC server connection and moderation controls are managed in the Discord-verified dashboard.</p>
+    <div class="note"><strong>Server owner:</strong> sign in with Discord, open <b>Connect ER:LC</b>, then paste the private-server API key there. This website does not ask for or store your server key.</div>
+    <a href="https://script.google.com/macros/s/AKfycbL74eRZCJDtjWNDVxWx1o5CNplSWCyQndnaeN-DkXnjylmOkxF6r-Sz2jgxZW0/exec">Open ER:LC Control Center</a>
+    <footer>Redirecting automatically. <a href="/">Return to Potential Millionaires</a> · <a href="/privacy.html">Privacy</a></footer>
+  </main>
+  <script>
+    try {
+      localStorage.removeItem("pm-dashboard-backend-url");
+      sessionStorage.removeItem("pm-dashboard-backend-url");
+      sessionStorage.removeItem("pm-dashboard-session");
+    } catch (_) {}
+    window.setTimeout(() => window.location.replace("https://script.google.com/macros/s/AKfycbL74eRZCJDtjWNDVxWx1o5CNplSWCyQndnaeN-DkXnjylmOkxF6r-Sz2jgxZW0/exec"), 700);
+  </script>
 </body>
 </html>
 

@@ -14,11 +14,9 @@ Use full `https://` links. Never put a Discord bot token or private API key in t
 
 ## ER:LC control center
 
-Open `dashboard.html` for the dashboard panels: overview, join with code, member requests, players, moderation, server controls, shifts, action logs, role access, command guide, settings, and help. Panel navigation, mobile navigation, moderation previews, command previews, Discord sign-in handoff, join requests, invite management, and the backend health check are wired up in `dashboard.js`.
+`dashboard.html` opens the live Google Apps Script control center. Staff sign in with Discord; the server checks owner approval and current Discord roles for protected actions. The owner connects or replaces the ER:LC private-server key from the **Connect ER:LC** page inside that dashboard.
 
-The dashboard is a static front end. The join form and owner request inbox call a secure backend API, but actual Discord login, code verification, approvals, and role enforcement do not work until that backend is implemented and connected. See [`docs/moderator-join-api.md`](docs/moderator-join-api.md) for the route contract and security requirements. Keep the ER:LC server key on the bot host, and enforce Discord sign-in and role checks on every backend request.
-
-Set `DEFAULT_API_URL` near the top of `dashboard.js` after a backend has been deployed so all users get the same HTTPS endpoint. The Settings panel can save an override in the current browser only. If the existing Apps Script deployment is set to **Only myself**, it will reject moderator requests; implement server-side authorization before widening its access. Google documents `MYSELF` as access for only the deploying user and supports separate access settings for web-app deployments: [Apps Script web apps](https://developers.google.com/apps-script/guides/web).
+Never paste the ER:LC key into this public website or its backend URL settings. The live dashboard tests the key before saving it to Apps Script Script Properties, and does not return it to the browser. The previous static endpoint setting is cleared when `dashboard.html` opens and is no longer used.
 
 ## Finish GitHub Pages setup
 
@@ -54,3 +52,4 @@ Do not put the repository name or `https://` in the CNAME value. DNS changes can
 - `docs/moderator-join-api.md`: API contract for Discord sign-in, join codes, and owner approvals
 - `assets/`: optimized DrawCoaster screenshots captured from the supplied gameplay video
 - `.github/workflows/deploy.yml`: deploys the site to GitHub Pages on pushes to `main`
+

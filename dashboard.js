@@ -15,6 +15,50 @@
   const DEFAULT_API_URL = ""; // Set the deployed backend's public HTTPS URL here so every moderator gets it automatically.
   let toastTimer;
 
+  function preferencesAllowed() {
+    return window.pmCookieConsent?.preferencesAllowed() === true;
+  }
+
+  function getSavedEndpoint() {
+    try {
+      const temporary = sessionStorage.getItem(storageKey);
+      if (temporary) return temporary;
+      return preferencesAllowed() ? localStorage.getItem(storageKey) || "" : "";
+    } catch {
+      return "";
+    }
+  }
+
+  function saveEndpointPreference(value) {
+    try {
+      if (preferencesAllowed()) {
+        localStorage.setItem(storageKey, value);
+        sessionStorage.removeItem(storageKey);
+      } else {
+        sessionStorage.setItem(storageKey, value);
+        localStorage.removeItem(storageKey);
+      }
+    } catch {
+      // Keep the endpoint in the current field if browser storage is unavailable.
+    }
+  }
+
+  window.addEventListener("pm-cookie-choice-changed", (event) => {
+    try {
+      const saved = localStorage.getItem(storageKey) || sessionStorage.getItem(storageKey);
+      if (!saved) return;
+      if (event.detail?.preferences) {
+        localStorage.setItem(storageKey, saved);
+        sessionStorage.removeItem(storageKey);
+      } else {
+        sessionStorage.setItem(storageKey, saved);
+        localStorage.removeItem(storageKey);
+      }
+    } catch {
+      // A storage restriction should not prevent the dashboard from opening.
+    }
+  });
+
   function showToast(message) {
     if (!toast) return;
     toast.textContent = message;
@@ -128,12 +172,12 @@
     });
   }
 
-  const savedEndpoint = localStorage.getItem(storageKey) || DEFAULT_API_URL;
+  const savedEndpoint = getSavedEndpoint() || DEFAULT_API_URL;
   if (endpointInput && savedEndpoint) endpointInput.value = savedEndpoint;
-  if (endpointStatus && savedEndpoint) endpointStatus.textContent = "Shared backend endpoint loaded. Check the connection to confirm it is reachable.";
+  if (endpointStatus && savedEndpoint) endpointStatus.textContent = "Saved backend endpoint loaded. Check the connection to confirm it is reachable.";
 
   function parseEndpoint() {
-    const raw = endpointInput?.value.trim() || localStorage.getItem(storageKey) || DEFAULT_API_URL;
+    const raw = endpointInput?.value.trim() || getSavedEndpoint() || DEFAULT_API_URL;
     let url;
     try {
       url = new URL(raw);
@@ -343,9 +387,11 @@
     saveEndpoint.addEventListener("click", () => {
       try {
         const url = parseEndpoint();
-        localStorage.setItem(storageKey, url);
-        if (endpointStatus) endpointStatus.textContent = "Endpoint saved only in this browser. No API key or token was saved.";
-        showToast("Backend URL saved on this device.");
+        saveEndpointPreference(url);
+        if (endpointStatus) endpointStatus.textContent = preferencesAllowed()
+          ? "Endpoint saved in this browser. No API key or token was saved."
+          : "Endpoint saved for this browser session only. Accept preferences to keep it for later visits.";
+        showToast(preferencesAllowed() ? "Backend preference saved." : "Backend URL saved for this session.");
       } catch (error) {
         if (endpointStatus) endpointStatus.textContent = error.message;
         showToast(error.message);
@@ -380,7 +426,7 @@
           signal: controller.signal
         });
         if (!response.ok) throw new Error(`Health endpoint returned HTTP ${response.status}.`);
-        localStorage.setItem(storageKey, baseUrl);
+        saveEndpointPreference(baseUrl);
         if (endpointStatus) endpointStatus.textContent = "Health endpoint responded. This confirms reachability only; Discord sign-in, roles, and ER:LC actions still need backend routes.";
         if (connectionBadge) connectionBadge.innerHTML = "<i></i> BACKEND REACHABLE";
         showToast("Backend health check succeeded. Live dashboard data is not enabled yet.");
@@ -404,3 +450,4 @@
   const serverSwitch = document.querySelector(".server-switch");
   if (serverSwitch) serverSwitch.addEventListener("click", () => showToast("Only one ER:LC private server is configured in this dashboard."));
 })();
+

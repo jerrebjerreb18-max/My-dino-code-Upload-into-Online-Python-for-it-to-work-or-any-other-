@@ -7,6 +7,8 @@
   <meta name="description" content="Potential Millionaires ER:LC server control center.">
   <title>ER:LC Control Center — Potential Millionaires</title>
   <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="cookie-notice.css">
+  <script src="cookie-notice.js" defer></script>
   <script src="dashboard.js" defer></script>
 </head>
 <body>
@@ -125,6 +127,11 @@
       <div class="toast" id="dashboard-toast" role="status" aria-live="polite"></div>
     </main>
   </div>
-  <footer class="legal-footer" aria-label="Legal and studio links"><a href="terms.html">Terms of Service</a><a href="privacy.html">Privacy Policy</a><a href="index.html">Potential Millionaires</a></footer>
+  <footer class="legal-footer" aria-label="Legal and studio links"><a href="terms.html">Terms of Service</a><a href="privacy.html">Privacy Policy</a><button class="cookie-settings-link" type="button" data-open-cookie-notice>Cookie choices</button><a href="index.html">Potential Millionaires</a></footer>
+  <aside class="cookie-notice" id="cookie-notice" role="region" aria-label="Cookie and storage choices" aria-describedby="cookie-notice-copy" hidden>
+    <div class="cookie-notice-copy"><p class="cookie-notice-kicker">PRIVACY CHOICES</p><p id="cookie-notice-copy">We use necessary browser storage for sign-in. If you choose, we can also remember dashboard preferences such as your backend address. Analytics and advertising trackers are off. Read the <a href="privacy.html#cookies">Privacy Policy</a>.</p></div>
+    <div class="cookie-notice-actions"><button class="cookie-button cookie-button-primary" type="button" data-cookie-choice="preferences">Accept preferences</button><button class="cookie-button cookie-button-secondary" type="button" data-cookie-choice="essential">Essential only</button></div>
+  </aside>
 </body>
 </html>
+

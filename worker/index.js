@@ -39,7 +39,7 @@ function html(message, status = 400) {
 }
 
 function allowedOrigins(env) {
-  const configured = String(env.ALLOWED_SITE_ORIGINS || "https://potentialmillionaires.xyz,https://www.potentialmillionaires.xyz,http://potentialmillionaires.xyz,http://www.potentialmillionaires.xyz");
+  const configured = String(env.ALLOWED_SITE_ORIGINS || "https://potentialmillionaires.xyz,https://www.potentialmillionaires.xyz");
   return new Set(configured.split(",").map(value => value.trim()).filter(Boolean));
 }
 

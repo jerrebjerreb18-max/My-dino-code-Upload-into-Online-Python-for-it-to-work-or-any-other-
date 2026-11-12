@@ -32,7 +32,7 @@ The dashboard page is served by GitHub Pages. This Worker is the private API bac
 
 ## Discord and site settings
 
-The OAuth client ID, log channel ID, Staff role ID, and HR role ID are already set as non-secret Worker variables in `wrangler.toml`. The server ID is detected from the configured log channel when `DISCORD_GUILD_ID` is blank. If detection fails, set the numeric Discord server ID in that variable and redeploy. The bot must be in the server, able to read the log channel, view guild members, and send messages to the log channel.
+The OAuth client ID, log channel ID, Staff role ID, and HR role ID are already set as non-secret Worker variables in `wrangler.toml`. The server ID is detected from the configured log channel when `DISCORD_GUILD_ID` is blank. If detection fails, set the numeric Discord server ID in that variable and redeploy. The bot must be in the server, able to read the log channel, view guild members, and send messages to the log channel. In the Discord Developer Portal, enable **Server Members Intent** under Bot → Privileged Gateway Intents: Discord restricts the Get Guild Member endpoint used here to apps with the `GUILD_MEMBERS` intent.
 
 GitHub Pages must have a valid HTTPS certificate before Discord sign-in is enabled. `ALLOWED_SITE_ORIGINS` intentionally allows only the HTTPS site origins so the short-lived dashboard session is never returned to an HTTP page.
 
@@ -48,3 +48,4 @@ GitHub Pages must have a valid HTTPS certificate before Discord sign-in is enabl
 ## Local development
 
 For local-only credentials, create `worker/.dev.vars` (ignored by Git) with the three secret names shown above. Do not commit that file. Use `npx wrangler@latest dev` from `worker` after setting up the D1 database binding.
+

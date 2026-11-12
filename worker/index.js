@@ -411,6 +411,8 @@ async function handleApi(request, env, url) {
     const attempt = await env.DB.prepare("SELECT attempts FROM join_code_attempts WHERE user_id = ?").bind(session.user.id).first();
     if (Number(attempt.attempts) > 5) throw new HttpError(429, "Too many code attempts. Wait 10 minutes and try again.");
     if (await env.DB.prepare("SELECT id FROM moderator_requests WHERE user_id = ?").bind(session.user.id).first()) return json({ ok: true, status: "pending", message: "Your request is already waiting for the owner." });
+    const pendingCount = await env.DB.prepare("SELECT COUNT(*) AS total FROM moderator_requests").first();
+    if (Number(pendingCount.total) >= 50) throw new HttpError(409, "The request queue is full. Ask the owner to review it before trying again.");
     const codeRow = await env.DB.prepare("SELECT code_hash, salt, expires_at, uses, max_uses FROM moderator_join_code WHERE id = 1").first();
     if (!codeRow || Number(codeRow.expires_at) <= now || Number(codeRow.uses) >= Number(codeRow.max_uses) || await sha256Hex(code + "|" + codeRow.salt) !== codeRow.code_hash) throw new HttpError(400, "That join code is invalid or expired. Ask the server owner for a current code.");
     const claim = await env.DB.prepare("UPDATE moderator_join_code SET uses = uses + 1 WHERE id = 1 AND code_hash = ? AND expires_at > ? AND uses < max_uses RETURNING uses").bind(codeRow.code_hash, now).first();
@@ -513,7 +515,7 @@ async function handleApi(request, env, url) {
     const reason = String(body.reason || "").trim();
     if (!["kick", "ban", "unban"].includes(action)) throw new HttpError(400, "Choose kick, ban, or unban.");
     if (!/^\d{1,20}$/.test(id)) throw new HttpError(400, "Enter a numeric Roblox user ID.");
-    if (!reason || reason.length > 300 || /[\r\n\0]/.test(reason)) throw new HttpError(400, "Enter a single-line reason between 1 and 300 characters.");
+    if (!reason || reason.length > 300 || /[\r\n\0;]/.test(reason)) throw new HttpError(400, "Enter a single-line reason between 1 and 300 characters, without semicolons.");
     if (body.confirmation !== true) throw new HttpError(400, "Review and confirm the action before sending.");
     if ((action === "ban" || action === "unban") && body.senior_ack !== true) throw new HttpError(403, "Ban and unban require senior moderation confirmation.");
     const now = Date.now();
@@ -577,3 +579,4 @@ export default {
     return new Response(response.body, { status: response.status, statusText: response.statusText, headers: merged });
   },
 };
+

@@ -28,10 +28,10 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload static site
+      - name: Upload maintenance-only site
         uses: actions/upload-pages-artifact@v4
         with:
-          path: .
+          path: maintenance
 
       - name: Deploy site
         id: deployment

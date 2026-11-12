@@ -14,9 +14,11 @@ Use full `https://` links. Never put a Discord bot token or private API key in t
 
 ## ER:LC control center
 
-`dashboard.html` opens the live Google Apps Script control center. Staff sign in with Discord; the server checks owner approval and current Discord roles for protected actions. The owner connects or replaces the ER:LC private-server key from the **Connect ER:LC** page inside that dashboard.
+`dashboard.html` is the GitHub Pages frontend. It connects to the private Cloudflare Worker API configured in `dashboard-config.js`. Staff sign in with Discord; the Worker checks owner approval and current Discord roles for protected actions. The owner connects or replaces the ER:LC private-server key from the **Connect ER:LC** page inside that dashboard.
 
-Never paste the ER:LC key into this public website or its backend URL settings. The live dashboard tests the key before saving it to Apps Script Script Properties, and does not return it to the browser. The previous static endpoint setting is cleared when `dashboard.html` opens and is no longer used.
+GitHub Pages only hosts public static files; it does not run the private API. The Worker stores Discord secrets as encrypted backend secrets and encrypts the ER:LC key before storing it in D1. The key is tested before saving and is never returned to the browser. Never put bot tokens, OAuth secrets, or the ER:LC key in this repository or `dashboard-config.js`.
+
+Follow [`worker/README.md`](worker/README.md) to create the D1 database, deploy the Worker, set private secrets, and configure the exact Discord OAuth callback. The Worker can discover the Discord server ID from the staff-log channel when the `DISCORD_GUILD_ID` variable is left blank; otherwise set the numeric server ID in the Worker configuration.
 
 ## Finish GitHub Pages setup
 
@@ -48,8 +50,9 @@ Do not put the repository name or `https://` in the CNAME value. DNS changes can
 - `index.html`: site content and layout
 - `style.css`: responsive visual design
 - `script.js`: navigation, interactions, and project links
-- `dashboard.html`, `dashboard.css`, and `dashboard.js`: ER:LC dashboard and its panel interactions
-- `docs/moderator-join-api.md`: API contract for Discord sign-in, join codes, and owner approvals
+- `dashboard.html`: Discord-gated ER:LC control center
+- `dashboard-config.js`: public Worker URL only; no secrets
+- `worker/`: Cloudflare Worker API, D1 schema, and deployment instructions
+- `docs/moderator-join-api.md`: dashboard API and access-control contract
 - `assets/`: optimized DrawCoaster screenshots captured from the supplied gameplay video
 - `.github/workflows/deploy.yml`: deploys the site to GitHub Pages on pushes to `main`
-

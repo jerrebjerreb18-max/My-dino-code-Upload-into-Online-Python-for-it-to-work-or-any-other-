@@ -1,0 +1,173 @@
+name: Deploy ERLC backend and website
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: potential-millionaires-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.pages-deployment.outputs.page_url }}
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check required private settings
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_OAUTH_CLIENT_SECRET: ${{ secrets.DISCORD_OAUTH_CLIENT_SECRET }}
+          ERLC_KEY_ENCRYPTION_SECRET: ${{ secrets.ERLC_KEY_ENCRYPTION_SECRET }}
+        run: |
+          set -eu
+          missing=0
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID DISCORD_BOT_TOKEN DISCORD_OAUTH_CLIENT_SECRET ERLC_KEY_ENCRYPTION_SECRET; do
+            case "$name" in
+              CLOUDFLARE_API_TOKEN) value=$CLOUDFLARE_API_TOKEN ;;
+              CLOUDFLARE_ACCOUNT_ID) value=$CLOUDFLARE_ACCOUNT_ID ;;
+              DISCORD_BOT_TOKEN) value=$DISCORD_BOT_TOKEN ;;
+              DISCORD_OAUTH_CLIENT_SECRET) value=$DISCORD_OAUTH_CLIENT_SECRET ;;
+              ERLC_KEY_ENCRYPTION_SECRET) value=$ERLC_KEY_ENCRYPTION_SECRET ;;
+            esac
+            if [ -z "$value" ]; then
+              echo "::error::Add the $name Actions secret before running this workflow."
+              missing=1
+            fi
+          done
+          test "$missing" -eq 0
+
+      - name: Prepare or reuse the D1 database
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node worker/scripts/prepare-deploy.mjs
+
+      - name: Apply database migrations
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          workingDirectory: worker
+          command: d1 migrations apply potential-millionaires-erlc --remote
+
+      - name: Deploy private API Worker
+        id: worker
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          workingDirectory: worker
+          command: deploy
+          secrets: |
+            DISCORD_BOT_TOKEN
+            DISCORD_OAUTH_CLIENT_SECRET
+            ERLC_KEY_ENCRYPTION_SECRET
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_OAUTH_CLIENT_SECRET: ${{ secrets.DISCORD_OAUTH_CLIENT_SECRET }}
+          ERLC_KEY_ENCRYPTION_SECRET: ${{ secrets.ERLC_KEY_ENCRYPTION_SECRET }}
+
+      - name: Verify the live Worker and Discord login URL
+        id: verify
+        env:
+          WORKER_URL: ${{ steps.worker.outputs.deployment-url }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFile } from "node:fs/promises";
+          const raw = String(process.env.WORKER_URL || "").trim();
+          let origin;
+          try {
+            const parsed = new URL(raw);
+            if (parsed.protocol !== "https:" || parsed.username || parsed.password) throw new Error();
+            origin = parsed.origin;
+          } catch {
+            throw new Error("Cloudflare did not return a valid HTTPS Worker URL.");
+          }
+
+          let health;
+          for (let attempt = 0; attempt < 12; attempt += 1) {
+            try {
+              const response = await fetch(origin + "/health", { signal: AbortSignal.timeout(10000) });
+              health = await response.json();
+              if (response.ok && health.ready === true) break;
+            } catch {}
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
+          if (!health || health.ready !== true) throw new Error("The deployed Worker did not become ready. Check the deployment logs and Cloudflare permissions.");
+
+          const returnTo = "https://potentialmillionaires.xyz/dashboard.html";
+          const loginResponse = await fetch(origin + "/auth/discord/url?return_to=" + encodeURIComponent(returnTo), { signal: AbortSignal.timeout(15000) });
+          const login = await loginResponse.json().catch(() => ({}));
+          if (!loginResponse.ok || !login.url) throw new Error("The Worker health check passed, but its Discord login URL endpoint failed: " + String(login.error || loginResponse.status));
+          const authorize = new URL(login.url);
+          const expectedRedirect = origin + "/auth/discord/callback";
+          if (authorize.hostname !== "discord.com" || authorize.searchParams.get("redirect_uri") !== expectedRedirect) {
+            throw new Error("The Worker returned an unexpected Discord OAuth URL.");
+          }
+
+          await appendFile(process.env.GITHUB_OUTPUT, "worker_url=" + origin + "\n");
+          await appendFile(process.env.GITHUB_STEP_SUMMARY, [
+            "## Backend deployment is ready",
+            "",
+            "- Worker: " + origin,
+            "- Discord OAuth redirect URI: " + expectedRedirect,
+            "- The sign-in URL endpoint passed its live check.",
+            "",
+            "Add the exact redirect URI above in the Discord Developer Portal under OAuth2 → Redirects, then reload the dashboard.",
+            "",
+          ].join("\n"));
+          console.log("Worker health and Discord login URL checks passed.");
+          NODE
+
+      - name: Set the public dashboard backend URL
+        env:
+          WORKER_URL: ${{ steps.verify.outputs.worker_url }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { writeFile } from "node:fs/promises";
+          const url = new URL(process.env.WORKER_URL);
+          if (url.protocol !== "https:" || url.pathname !== "/" || url.search || url.hash) {
+            throw new Error("Expected an HTTPS Worker origin.");
+          }
+          const contents = "// Public API origin only. Never place bot tokens, OAuth secrets, or the ER:LC key here.\n" +
+            "window.PM_API_BASE_URL = " + JSON.stringify(url.origin) + ";\n";
+          await writeFile("dashboard-config.js", contents, "utf8");
+          NODE
+
+      - name: Commit generated public configuration
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dashboard-config.js worker/wrangler.toml
+          if ! git diff --cached --quiet; then
+            git commit -m "Configure deployed ERLC backend"
+            git push origin HEAD:main
+          fi
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the configured website
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .
+
+      - name: Publish the website
+        id: pages-deployment
+        uses: actions/deploy-pages@v4

@@ -3,8 +3,6 @@ main = "index.js"
 compatibility_date = "2026-11-12"
 workers_dev = true
 
-# After the first deploy, set PUBLIC_API_ORIGIN to the exact HTTPS workers.dev URL
-# shown by Cloudflare, then deploy again.
 [vars]
 DISCORD_OAUTH_CLIENT_ID = "1568360900648243281"
 DISCORD_LOG_CHANNEL_ID = "1568344574714191882"
@@ -12,7 +10,6 @@ DISCORD_STAFF_ROLE_ID = "1568344466375442604"
 DISCORD_HR_ROLE_ID = "1568344448612569119"
 DISCORD_GUILD_ID = ""
 DISCORD_OWNER_ID = ""
-PUBLIC_API_ORIGIN = ""
 ALLOWED_SITE_ORIGINS = "https://potentialmillionaires.xyz,https://www.potentialmillionaires.xyz"
 
 [[d1_databases]]
@@ -20,4 +17,3 @@ binding = "DB"
 database_name = "potential-millionaires-erlc"
 database_id = "00000000-0000-0000-0000-000000000000"
 migrations_dir = "migrations"
-

@@ -252,11 +252,8 @@ async function createDiscordLoginUrl(request, env) {
   await requireDatabase(env);
   const clientId = String(env.DISCORD_OAUTH_CLIENT_ID || "1568360900648243281").trim();
   const clientSecret = String(env.DISCORD_OAUTH_CLIENT_SECRET || "").trim();
-  const apiOrigin = String(env.PUBLIC_API_ORIGIN || "").replace(/\/$/, "");
+  const apiOrigin = new URL(request.url).origin;
   if (!clientId || !clientSecret) throw new HttpError(503, "The owner must configure DISCORD_OAUTH_CLIENT_SECRET in the backend before Discord sign-in can work.");
-  if (!/^https:\/\//.test(apiOrigin)) throw new HttpError(503, "Set PUBLIC_API_ORIGIN to this Worker’s HTTPS URL before enabling Discord sign-in.");
-  const requestOrigin = new URL(request.url).origin;
-  if (requestOrigin !== apiOrigin) throw new HttpError(503, "PUBLIC_API_ORIGIN must exactly match this Worker’s URL.");
   const url = new URL(request.url);
   const returnTo = String(url.searchParams.get("return_to") || "");
   let target;
@@ -286,7 +283,7 @@ async function discordOAuthCallback(request, env) {
   if (!stateRow) return html("This Discord sign-in request expired or was already used. Start a new sign-in from the dashboard.");
   const clientId = String(env.DISCORD_OAUTH_CLIENT_ID || "1568360900648243281").trim();
   const clientSecret = String(env.DISCORD_OAUTH_CLIENT_SECRET || "").trim();
-  const apiOrigin = String(env.PUBLIC_API_ORIGIN || "").replace(/\/$/, "");
+  const apiOrigin = url.origin;
   const redirectUri = apiOrigin + "/auth/discord/callback";
   const form = new URLSearchParams({ client_id: clientId, client_secret: clientSecret, grant_type: "authorization_code", code, redirect_uri: redirectUri });
   const tokenResponse = await fetch(DISCORD_API + "/oauth2/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" }, body: form, signal: AbortSignal.timeout(12000) });
@@ -554,7 +551,7 @@ async function handleRequest(request, env) {
   const origin = request.headers.get("origin") || "";
   if (origin && !allowedOrigins(env).has(origin)) return json({ error: "This website origin is not allowed." }, 403);
   if (request.method === "GET" && url.pathname === "/health") {
-    return json({ ok: true, service: "Potential Millionaires ER:LC API", ready: Boolean(env.DB && env.DISCORD_OAUTH_CLIENT_SECRET && env.DISCORD_BOT_TOKEN && env.ERLC_KEY_ENCRYPTION_SECRET && env.PUBLIC_API_ORIGIN) });
+    return json({ ok: true, service: "Potential Millionaires ER:LC API", ready: Boolean(env.DB && env.DISCORD_OAUTH_CLIENT_SECRET && env.DISCORD_BOT_TOKEN && env.ERLC_KEY_ENCRYPTION_SECRET) });
   }
   if (request.method === "GET" && url.pathname === "/auth/discord/url") return json(await createDiscordLoginUrl(request, env));
   if (request.method === "GET" && url.pathname === "/auth/discord/callback") return discordOAuthCallback(request, env);

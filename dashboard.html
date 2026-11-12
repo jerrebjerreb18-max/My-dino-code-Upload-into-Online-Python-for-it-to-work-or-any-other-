@@ -94,7 +94,7 @@
   let currentAccess = null;
   const API_BASE_URL = String(window.PM_API_BASE_URL || "").trim().replace(/\/+$/, "");
   function apiBase() {
-    if (!API_BASE_URL) throw new Error("The owner needs to finish the GitHub backend setup and set PM_API_BASE_URL in dashboard-config.js.");
+    if (!API_BASE_URL) throw new Error("This GitHub Pages dashboard needs a private API backend before Discord sign-in and ER:LC commands can work. GitHub Pages only serves the interface and cannot securely keep bot or server keys.");
     let parsed;
     try { parsed = new URL(API_BASE_URL); } catch { throw new Error("The backend URL in dashboard-config.js is invalid."); }
     if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.search || parsed.hash || (parsed.pathname !== "/" && parsed.pathname !== "")) throw new Error("Use the backend HTTPS origin only, without credentials or extra paths.");
@@ -363,3 +363,4 @@
 
 </script>
 </body></html>
+

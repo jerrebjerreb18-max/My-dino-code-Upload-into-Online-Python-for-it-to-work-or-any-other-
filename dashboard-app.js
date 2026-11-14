@@ -394,5 +394,6 @@
     }catch(error){status.textContent=error.message||"Could not connect. Check the key and try again.";status.className="api-connect-status error";}
     finally{input.value="";button.disabled=false;button.textContent="Connect & test";}
   });
+  window.addEventListener("pageshow", event => { if (event.persisted) showEntryGate(); });
   initializeAccess();
 })();

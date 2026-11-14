@@ -299,7 +299,7 @@
       $("#staffAccessNav").hidden=!currentAccess.isOwner;
       $("#serverConnectionNav").hidden=!currentAccess.isOwner;
       $("#ownerConnectButton").hidden=!currentAccess.isOwner;
-      $$("#[data-page='moderation'],[data-page='bans']").forEach(node=>node.hidden=!currentAccess.canModerate);
+      $$("[data-page='moderation'],[data-page='bans']").forEach(node=>node.hidden=!currentAccess.canModerate);
       $("#page-moderation").querySelectorAll("[data-action-type='ban'],[data-action-type='unban']").forEach(node=>node.hidden=!currentAccess.canSenior);
       if(!currentAccess.canModerate)toast("You have dashboard access. Add the configured Discord Staff role to use moderation tools.","error");
       const wanted=location.hash.replace(/^#\/?/,"");

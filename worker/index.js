@@ -93,7 +93,7 @@ function html(message, status = 400) {
   const safe = String(message).replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   })[character]);
-  return new Response("<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'><title>Discord sign-in</title><main style='font:16px system-ui;max-width:620px;margin:12vh auto;padding:28px;background:#171d26;color:#f2f5f8;border-radius:16px'><h1>Sign-in needs attention</h1><p>" + safe + "</p><p>Return to the Potential Millionaires dashboard and try again.</p></main>", {
+  return new Response("<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'><title>Discord sign-in</title><main style='font:16px system-ui;max-width:620px;margin:12vh auto;padding:28px;background:#171d26;color:#f2f5f8;border-radius:16px'><h1>Sign-in needs attention</h1><p>" + safe + "</p><p><a style='color:#c8f06a' href='https://potentialmillionaires.xyz/dashboard.html'>Return to the Potential Millionaires dashboard</a></p><p>Need help? Email <a style='color:#c8f06a' href='mailto:potentialmillionairesofficial@gmail.com'>potentialmillionairesofficial@gmail.com</a>.</p></main>", {
     status,
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" },
   });
@@ -187,7 +187,20 @@ async function discordRequest(path, token, scheme = "Bot", options = {}) {
   const body = parseJson(bodyText, {});
   if (!response.ok) {
     const status = response.status === 404 ? 404 : response.status === 401 || response.status === 403 ? 503 : 502;
-    const message = response.status === 404 ? "The Discord account is not in the configured server." : "Discord API returned HTTP " + response.status + ". Check the bot token, server access, and requested OAuth scope.";
+    let message;
+    if (response.status === 404) {
+      message = "The Discord account is not in the configured server.";
+    } else if (response.status === 401 && scheme === "Bot") {
+      message = "Discord rejected the dashboard bot token (HTTP 401). Replace the GitHub Actions DISCORD_BOT_TOKEN secret with the current token from the Discord Developer Portal. Store the raw token without a 'Bot ' prefix, then redeploy the Worker.";
+    } else if (response.status === 403 && scheme === "Bot") {
+      message = "Discord denied the dashboard bot access (HTTP 403). Confirm that the bot is in the configured server and can access server membership.";
+    } else if (response.status === 401) {
+      message = "Discord rejected this sign-in token (HTTP 401). Return to the dashboard and start a fresh sign-in.";
+    } else if (response.status === 403) {
+      message = "Discord denied this sign-in (HTTP 403). Return to the dashboard and start a fresh sign-in.";
+    } else {
+      message = "Discord API returned HTTP " + response.status + ". Try again later.";
+    }
     throw new HttpError(status, message);
   }
   return body;
@@ -360,7 +373,12 @@ async function discordOAuthCallback(request, env) {
   const profile = await discordRequest("/users/@me", tokenBody.access_token, "Bearer");
   const userId = String(profile.id || "");
   if (!/^\d{15,22}$/.test(userId)) return html("Discord did not return a valid account ID.");
-  await guildMember(env, userId);
+  try {
+    await guildMember(env, userId);
+  } catch (error) {
+    if (error instanceof HttpError) return html(error.message, error.status);
+    throw error;
+  }
   const sessionToken = randomHex(32);
   await env.DB.prepare("INSERT INTO dashboard_sessions (token_hash, user_id, username, created_at, expires_at) VALUES (?, ?, ?, ?, ?)").bind(await sha256Hex(sessionToken), userId, String(profile.global_name || profile.username || "Discord member").slice(0, 80), now, now + SESSION_TTL).run();
   const target = new URL(String(stateRow.return_to));

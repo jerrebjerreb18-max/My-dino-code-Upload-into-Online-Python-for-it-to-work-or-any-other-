@@ -360,14 +360,18 @@ async function discordOAuthCallback(request, env) {
   const clientSecret = String(env.DISCORD_OAUTH_CLIENT_SECRET || "").trim();
   const apiOrigin = url.origin;
   const redirectUri = apiOrigin + "/auth/discord/callback";
-  const form = new URLSearchParams({ client_id: clientId, client_secret: clientSecret, grant_type: "authorization_code", code, redirect_uri: redirectUri });
-  const tokenResponse = await fetch(DISCORD_API + "/oauth2/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" }, body: form, signal: AbortSignal.timeout(12000) });
+  const form = new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: redirectUri });
+  const clientCredentials = btoa(clientId + ":" + clientSecret);
+  const tokenResponse = await fetch(DISCORD_API + "/oauth2/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json", authorization: "Basic " + clientCredentials }, body: form, signal: AbortSignal.timeout(12000) });
   const tokenBody = parseJson(await tokenResponse.text(), {});
   if (!tokenResponse.ok || !tokenBody.access_token) {
     const knownErrors = new Set(["invalid_client", "invalid_grant", "invalid_request", "unauthorized_client", "unsupported_grant_type"]);
     const reportedError = String(tokenBody.error || "").toLowerCase();
     const safeError = knownErrors.has(reportedError) ? reportedError : "unknown_error";
     console.error("Discord OAuth token exchange rejected", { status: tokenResponse.status, error: safeError });
+    if (safeError === "invalid_client") {
+      return html("Discord rejected the dashboard OAuth client credentials (invalid_client). The owner must update the GitHub Actions secret DISCORD_OAUTH_CLIENT_SECRET with the OAuth2 Client Secret for application " + clientId + ", then redeploy. This is separate from the Discord bot token.", 502);
+    }
     return html("Discord rejected the OAuth code exchange (HTTP " + tokenResponse.status + "; " + safeError + "). Start a fresh sign-in from the dashboard.");
   }
   const profile = await discordRequest("/users/@me", tokenBody.access_token, "Bearer");

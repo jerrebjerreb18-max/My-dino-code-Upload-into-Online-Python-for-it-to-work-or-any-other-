@@ -62,15 +62,34 @@ jobs:
       - name: Verify Discord bot token and server access
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_OAUTH_CLIENT_SECRET: ${{ secrets.DISCORD_OAUTH_CLIENT_SECRET }}
         run: |
           node --input-type=module <<'NODE'
           import { readFile } from "node:fs/promises";
           const token = String(process.env.DISCORD_BOT_TOKEN || "").trim();
+          const oauthSecret = String(process.env.DISCORD_OAUTH_CLIENT_SECRET || "").trim();
           const config = await readFile("worker/wrangler.toml", "utf8");
           const clientId = config.match(/^DISCORD_OAUTH_CLIENT_ID\s*=\s*"([0-9]+)"/m)?.[1];
           const guildId = config.match(/^DISCORD_GUILD_ID\s*=\s*"([0-9]+)"/m)?.[1];
           if (!token) throw new Error("DISCORD_BOT_TOKEN is empty.");
           if (!clientId || !guildId) throw new Error("Set valid Discord client and server IDs in worker/wrangler.toml.");
+          if (!oauthSecret) throw new Error("Add the DISCORD_OAUTH_CLIENT_SECRET GitHub Actions secret.");
+
+          const oauthResponse = await fetch("https://discord.com/api/v10/oauth2/token", {
+            method: "POST",
+            headers: {
+              authorization: "Basic " + Buffer.from(clientId + ":" + oauthSecret).toString("base64"),
+              "content-type": "application/x-www-form-urlencoded",
+              accept: "application/json"
+            },
+            body: new URLSearchParams({ grant_type: "client_credentials", scope: "identify" }),
+            signal: AbortSignal.timeout(12000)
+          });
+          const oauthBody = await oauthResponse.json().catch(() => ({}));
+          if (!oauthResponse.ok || !oauthBody.access_token) {
+            throw new Error("Discord rejected DISCORD_OAUTH_CLIENT_SECRET for application " + clientId + " (HTTP " + oauthResponse.status + ", " + String(oauthBody.error || "unknown_error") + "). Set the OAuth2 Client Secret for this same application in GitHub Actions; do not use the bot token.");
+          }
+          // Keep the short-lived client-credentials token in memory only; never log or persist it.
 
           const headers = { authorization: "Bot " + token, accept: "application/json" };
           const botResponse = await fetch("https://discord.com/api/v10/users/@me", { headers, signal: AbortSignal.timeout(12000) });

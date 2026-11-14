@@ -627,6 +627,11 @@ async function handleRequest(request, env) {
     if (!turnstileConfigured(env)) throw new HttpError(503, "Cloudflare bot verification is not configured yet. Sign-in is paused until Turnstile is connected.");
     return json({ enabled: true, siteKey: String(env.TURNSTILE_SITE_KEY).trim() });
   }
+  if (request.method === "POST" && url.pathname === "/security/entry") {
+    const body = await readJson(request, 4096);
+    await verifyTurnstile(env, body.turnstile_token, "dashboard_entry");
+    return json({ ok: true });
+  }
   if (request.method === "POST" && url.pathname === "/auth/discord/url") return json(await createDiscordLoginUrl(request, env, await readJson(request, 4096)));
   if (request.method === "GET" && url.pathname === "/auth/discord/callback") return discordOAuthCallback(request, env);
   if (!url.pathname.startsWith("/api/")) return json({ error: "This backend serves API routes only. Open the GitHub Pages dashboard." }, 404);

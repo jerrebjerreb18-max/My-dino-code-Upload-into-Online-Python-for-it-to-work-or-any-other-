@@ -59,6 +59,34 @@ jobs:
           done
           test "$missing" -eq 0
 
+      - name: Verify Discord bot token and server access
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile } from "node:fs/promises";
+          const token = String(process.env.DISCORD_BOT_TOKEN || "").trim();
+          const config = await readFile("worker/wrangler.toml", "utf8");
+          const clientId = config.match(/^DISCORD_OAUTH_CLIENT_ID\s*=\s*"([0-9]+)"/m)?.[1];
+          const guildId = config.match(/^DISCORD_GUILD_ID\s*=\s*"([0-9]+)"/m)?.[1];
+          if (!token) throw new Error("DISCORD_BOT_TOKEN is empty.");
+          if (!clientId || !guildId) throw new Error("Set valid Discord client and server IDs in worker/wrangler.toml.");
+
+          const headers = { authorization: "Bot " + token, accept: "application/json" };
+          const botResponse = await fetch("https://discord.com/api/v10/users/@me", { headers, signal: AbortSignal.timeout(12000) });
+          if (!botResponse.ok) {
+            throw new Error("Discord rejected DISCORD_BOT_TOKEN (HTTP " + botResponse.status + "). Replace the GitHub Actions secret with the current raw bot token, without a 'Bot ' prefix.");
+          }
+          const bot = await botResponse.json();
+          if (String(bot.id || "") !== clientId) throw new Error("DISCORD_BOT_TOKEN belongs to a different Discord application than DISCORD_OAUTH_CLIENT_ID.");
+
+          const guildResponse = await fetch("https://discord.com/api/v10/guilds/" + guildId, { headers, signal: AbortSignal.timeout(12000) });
+          if (!guildResponse.ok) {
+            throw new Error("The bot token is valid, but Discord denied access to configured server " + guildId + " (HTTP " + guildResponse.status + "). Reinvite the correct bot and confirm DISCORD_GUILD_ID.");
+          }
+          console.log("Discord bot token, application ID, and configured server access verified.");
+          NODE
+
       - name: Prepare or reuse the D1 database
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

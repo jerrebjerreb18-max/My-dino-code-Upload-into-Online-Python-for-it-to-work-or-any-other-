@@ -23,13 +23,13 @@ function json(data, status = 200, headers = {}) {
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
       "x-content-type-options": "nosniff",
-      "referrer-policy": "no-referrer",
+      "referrer-policy": "same-origin",
       ...headers,
     },
   });
 }
 
-async function readJson(request, maxBytes = 8192) {
+async function readJson(request, maxBytes = 4096) {
   const declaredLength = Number(request.headers.get("content-length") || 0);
   if (declaredLength > maxBytes) throw new HttpError(413, "The request is too large.");
   if (!(request.headers.get("content-type") || "").toLowerCase().startsWith("application/json")) {
@@ -313,11 +313,8 @@ async function createDiscordLoginUrl(request, env, body) {
   await requireDatabase(env);
   const clientId = String(env.DISCORD_OAUTH_CLIENT_ID || "1568360900648243281").trim();
   const clientSecret = String(env.DISCORD_OAUTH_CLIENT_SECRET || "").trim();
-  const apiOrigin = String(env.PUBLIC_API_ORIGIN || "").replace(/\/$/, "");
+  const apiOrigin = new URL(request.url).origin;
   if (!clientId || !clientSecret) throw new HttpError(503, "The owner must configure DISCORD_OAUTH_CLIENT_SECRET in the backend before Discord sign-in can work.");
-  if (!/^https:\/\//.test(apiOrigin)) throw new HttpError(503, "Set PUBLIC_API_ORIGIN to this Worker’s HTTPS URL before enabling Discord sign-in.");
-  const requestOrigin = new URL(request.url).origin;
-  if (requestOrigin !== apiOrigin) throw new HttpError(503, "PUBLIC_API_ORIGIN must exactly match this Worker’s URL.");
   const url = new URL(request.url);
   const returnTo = String(body.return_to || "");
   let target;
@@ -348,12 +345,18 @@ async function discordOAuthCallback(request, env) {
   if (!stateRow) return html("This Discord sign-in request expired or was already used. Start a new sign-in from the dashboard.");
   const clientId = String(env.DISCORD_OAUTH_CLIENT_ID || "1568360900648243281").trim();
   const clientSecret = String(env.DISCORD_OAUTH_CLIENT_SECRET || "").trim();
-  const apiOrigin = String(env.PUBLIC_API_ORIGIN || "").replace(/\/$/, "");
+  const apiOrigin = url.origin;
   const redirectUri = apiOrigin + "/auth/discord/callback";
   const form = new URLSearchParams({ client_id: clientId, client_secret: clientSecret, grant_type: "authorization_code", code, redirect_uri: redirectUri });
   const tokenResponse = await fetch(DISCORD_API + "/oauth2/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" }, body: form, signal: AbortSignal.timeout(12000) });
   const tokenBody = parseJson(await tokenResponse.text(), {});
-  if (!tokenResponse.ok || !tokenBody.access_token) return html("Discord could not complete sign-in. Check the exact callback URL in the Developer Portal and the backend OAuth secret.");
+  if (!tokenResponse.ok || !tokenBody.access_token) {
+    const knownErrors = new Set(["invalid_client", "invalid_grant", "invalid_request", "unauthorized_client", "unsupported_grant_type"]);
+    const reportedError = String(tokenBody.error || "").toLowerCase();
+    const safeError = knownErrors.has(reportedError) ? reportedError : "unknown_error";
+    console.error("Discord OAuth token exchange rejected", { status: tokenResponse.status, error: safeError });
+    return html("Discord rejected the OAuth code exchange (HTTP " + tokenResponse.status + "; " + safeError + "). Start a fresh sign-in from the dashboard.");
+  }
   const profile = await discordRequest("/users/@me", tokenBody.access_token, "Bearer");
   const userId = String(profile.id || "");
   if (!/^\d{15,22}$/.test(userId)) return html("Discord did not return a valid account ID.");
@@ -570,6 +573,7 @@ async function handleApi(request, env, url) {
     return json({ banned: Boolean(found), message: found ? id + " is listed as " + found.name + "." : id + " is not on the current ban list." });
   }
   if (request.method === "POST" && url.pathname === "/api/command") {
+    if (Number(request.headers.get("content-length") || 0) > 4096) throw new HttpError(413, "The request is too large.");
     const body = await readJson(request, 4096);
     const action = String(body.action || "");
     const actor = action === "ban" || action === "unban" ? await requireSenior(request, env) : await requireModerator(request, env);
@@ -615,8 +619,9 @@ async function handleRequest(request, env) {
   }
   const origin = request.headers.get("origin") || "";
   if (origin && !allowedOrigins(env).has(origin)) return json({ error: "This website origin is not allowed." }, 403);
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method) && !allowedOrigins(env).has(origin)) return json({ error: "This website origin is not allowed." }, 403);
   if (request.method === "GET" && url.pathname === "/health") {
-    return json({ ok: true, service: "Potential Millionaires ER:LC API", ready: Boolean(env.DB && env.DISCORD_OAUTH_CLIENT_SECRET && env.DISCORD_BOT_TOKEN && env.ERLC_KEY_ENCRYPTION_SECRET && env.PUBLIC_API_ORIGIN && turnstileConfigured(env)) });
+    return json({ ok: true, service: "Potential Millionaires ER:LC API", ready: Boolean(env.DB && env.DISCORD_OAUTH_CLIENT_SECRET && env.DISCORD_BOT_TOKEN && env.ERLC_KEY_ENCRYPTION_SECRET && turnstileConfigured(env)) });
   }
   if (request.method === "GET" && url.pathname === "/security/config") {
     if (!turnstileConfigured(env)) throw new HttpError(503, "Cloudflare bot verification is not configured yet. Sign-in is paused until Turnstile is connected.");
@@ -649,3 +654,4 @@ export default {
     return new Response(response.body, { status: response.status, statusText: response.statusText, headers: merged });
   },
 };
+

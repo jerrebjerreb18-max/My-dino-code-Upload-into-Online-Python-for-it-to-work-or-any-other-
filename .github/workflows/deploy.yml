@@ -15,7 +15,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_site: ${{ steps.check.outputs.deploy_site }}
+    steps:
+      - name: Check out commit history
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Skip standalone publish for backend changes
+        id: check
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          if [ "$EVENT_NAME" != "push" ]; then
+            echo "deploy_site=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            changed_paths="$(git ls-tree -r --name-only "$COMMIT_SHA")"
+          else
+            changed_paths="$(git diff --name-only "$BEFORE_SHA" "$COMMIT_SHA")"
+          fi
+
+          if printf '%s\n' "$changed_paths" | grep -Eq '^(worker/|\.github/workflows/deploy-worker\.yml$)'; then
+            echo "deploy_site=false" >> "$GITHUB_OUTPUT"
+            echo "The Worker workflow will publish the site after the backend deployment succeeds."
+          else
+            echo "deploy_site=true" >> "$GITHUB_OUTPUT"
+          fi
+
   deploy:
+    needs: changes
+    if: needs.changes.outputs.deploy_site == 'true'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

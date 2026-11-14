@@ -94,7 +94,7 @@ jobs:
           ERLC_KEY_ENCRYPTION_SECRET: ${{ secrets.ERLC_KEY_ENCRYPTION_SECRET }}
           TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
-      - name: Verify the live Worker and Discord login URL
+      - name: Verify the live Worker and Turnstile configuration
         id: verify
         env:
           WORKER_URL: ${{ steps.worker.outputs.deployment-url }}
@@ -140,7 +140,7 @@ jobs:
             "Add the exact redirect URI above in the Discord Developer Portal under OAuth2 → Redirects, then reload the dashboard.",
             "",
           ].join("\n"));
-          console.log("Worker health and Discord login URL checks passed.");
+          console.log("Worker health and Turnstile configuration checks passed.");
           NODE
 
       - name: Set the public dashboard backend URL

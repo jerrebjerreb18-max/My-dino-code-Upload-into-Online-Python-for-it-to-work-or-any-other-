@@ -9,8 +9,8 @@
   let sessionToken = "";
   let currentAccess = null;
   let turnstilePromise = null;
-  const captchaTokens = { login: "", join: "" };
-  const captchaWidgets = { login: null, join: null };
+  const captchaTokens = { login: "", join: "", entry: "" };
+  const captchaWidgets = { login: null, join: null, entry: null };
   const API_BASE_URL = String(window.PM_API_BASE_URL || "").trim().replace(/\/+$/, "");
   function apiBase() {
     if (!API_BASE_URL) throw new Error("This GitHub Pages dashboard needs a private API backend before Discord sign-in and ER:LC commands can work. GitHub Pages only serves the interface and cannot securely keep bot or server keys.");
@@ -34,22 +34,39 @@
     turnstilePromise = new Promise((resolve, reject) => {
       const script = document.createElement("script");
       script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-      script.async = true;
-      script.defer = true;
+      script.async = false;
       script.onload = () => window.turnstile ? resolve(window.turnstile) : reject(new Error("Cloudflare verification did not load."));
-      script.onerror = () => reject(new Error("Cloudflare verification could not load. Check your network or browser extensions."));
+      script.onerror = () => {
+        script.remove();
+        turnstilePromise = null;
+        reject(new Error("Cloudflare verification could not load. Check your network or browser extensions."));
+      };
       document.head.append(script);
     });
     return turnstilePromise;
   }
+  function captchaMount(kind) {
+    return $(kind === "login" ? "#loginCaptchaMount" : kind === "join" ? "#joinCaptchaMount" : "#entryCaptchaMount");
+  }
+  function captchaButton(kind) {
+    return $(kind === "login" ? "#discordSignIn" : kind === "join" ? "#submitJoinCode" : "#entryContinueButton");
+  }
+  function captchaMessage(kind, message, error=false) {
+    if (kind === "entry") {
+      const node = $("#entryStatus");
+      node.textContent = message;
+      node.classList.toggle("gate-error", error);
+    } else {
+      gateMessage(message, error);
+    }
+  }
   async function renderCaptcha(kind) {
-    const mount = $(kind === "login" ? "#loginCaptchaMount" : "#joinCaptchaMount");
-    const button = $(kind === "login" ? "#discordSignIn" : "#submitJoinCode");
+    const mount = captchaMount(kind);
+    const button = captchaButton(kind);
     if (!mount || !button) throw new Error("The security check is unavailable on this page.");
     const config = await request("/security/config");
     if (!config.enabled || !config.siteKey) throw new Error("Cloudflare bot verification is not configured yet. The site owner must finish Turnstile setup before new sign-ins or moderator requests can continue.");
     const turnstile = await loadTurnstile();
-    await new Promise(resolve => turnstile.ready(resolve));
     mount.hidden = false;
     if (captchaWidgets[kind] !== null) {
       captchaTokens[kind] = "";
@@ -59,17 +76,26 @@
     }
     captchaWidgets[kind] = turnstile.render(mount, {
       sitekey: config.siteKey,
-      action: kind === "login" ? "dashboard_login" : "moderator_join",
+      action: kind === "login" ? "dashboard_login" : kind === "join" ? "moderator_join" : "dashboard_entry",
       theme: "dark",
-      callback: token => { captchaTokens[kind] = token; button.disabled = false; },
+      callback: token => {
+        captchaTokens[kind] = token;
+        button.disabled = false;
+        if (kind === "entry") button.textContent = "Continue to ER:LC dashboard";
+        if (kind === "entry") captchaMessage("entry", "Check complete. Continue to the staff dashboard.");
+      },
       "expired-callback": () => { captchaTokens[kind] = ""; button.disabled = true; },
-      "error-callback": () => { captchaTokens[kind] = ""; button.disabled = true; gateMessage("Cloudflare verification failed to load. Please retry.", true); },
+      "error-callback": () => {
+        captchaTokens[kind] = "";
+        button.disabled = true;
+        captchaMessage(kind, "Cloudflare verification failed to load. Please retry.", true);
+      },
       "timeout-callback": () => { captchaTokens[kind] = ""; button.disabled = true; },
     });
   }
   function resetCaptcha(kind) {
     captchaTokens[kind] = "";
-    const button = $(kind === "login" ? "#discordSignIn" : "#submitJoinCode");
+    const button = captchaButton(kind);
     if (button) button.disabled = true;
     if (captchaWidgets[kind] !== null && window.turnstile) window.turnstile.reset(captchaWidgets[kind]);
   }
@@ -231,6 +257,7 @@
   $("#banSearch").addEventListener("input",applyBanSearch); $("#commandSearch").addEventListener("input",event=>renderLibrary(event.target.value));
   document.addEventListener("click",async event=>{const opener=event.target.closest("[data-open-command]");if(opener){openPageForCommand(opener.dataset.openCommand);return;}const copy=event.target.closest("[data-copy]");if(copy){try{await navigator.clipboard.writeText(copy.dataset.copy);toast("Copied "+copy.dataset.copy,"success");}catch{toast(copy.dataset.copy);}}});
   function gateMessage(message,error=false){const node=$("#gateStatus");node.textContent=message;node.classList.toggle("gate-error",error);}
+  function entryMessage(message,error=false){const node=$("#entryStatus");node.textContent=message;node.classList.toggle("gate-error",error);}
   async function prepareSignIn(){
     const button=$("#discordSignIn");
     button.disabled=true;button.textContent="Loading security check…";
@@ -245,11 +272,12 @@
       const returnTo=window.location.origin+window.location.pathname;
       const result=await request("/auth/discord/url","","POST",{return_to:returnTo,turnstile_token:token});
       resetCaptcha("login");
+      sessionStorage.setItem("pm_login_flow_started","1");
       window.location.assign(result.url);
     }catch(error){resetCaptcha("login");button.textContent="Verify to continue with Discord";gateMessage(error.message,true);}
   });
   function displayGate(access,errorMessage=""){
-    $("#dashboardApp").hidden=true;$("#accessGate").hidden=false;
+    $("#siteEntryGate").hidden=true;$("#dashboardApp").hidden=true;$("#accessGate").hidden=false;
     $("#gateSignOut").hidden=!sessionToken;$("#discordSignIn").hidden=Boolean(sessionToken);
     $("#refreshAccess").hidden=!sessionToken;
     if(errorMessage){$("#gateTitle").textContent="Sign-in needs attention";gateMessage(errorMessage,true);$("#gateJoinForm").hidden=true;return;}
@@ -260,30 +288,66 @@
     $("#gateJoinForm").hidden=false;$("#loginCaptchaMount").hidden=true;$("#joinCaptchaMount").hidden=false;
     renderCaptcha("join").catch(error=>gateMessage(error.message,true));
   }
-  async function initializeAccess(){
-    const fragment=new URLSearchParams(location.hash.replace(/^#/,""));
-    const returned=fragment.get("pm_session");
-    if(returned){sessionToken=returned;sessionStorage.setItem("pm_discord_session",sessionToken);history.replaceState(null,"",location.pathname+location.search);}
-    else sessionToken=sessionStorage.getItem("pm_discord_session")||"";
+  async function loadDashboardAccess(){
     if(!sessionToken){displayGate(null);prepareSignIn();return;}
     try{
       currentAccess=await callServer("getDashboardAccess",sessionToken);
       if(!currentAccess.canView){displayGate(currentAccess);$("#discordSignIn").hidden=true;return;}
-      $("#accessGate").hidden=true;$("#dashboardApp").hidden=false;
+      $("#siteEntryGate").hidden=true;$("#accessGate").hidden=true;$("#dashboardApp").hidden=false;
       $("#currentUserName").textContent=currentAccess.user.name;$("#currentUserRole").textContent=currentAccess.isOwner?"Server owner":(currentAccess.canSenior?"HR moderator":(currentAccess.canModerate?"Staff moderator":"Approved · staff role needed"));
       $("#userAvatar").textContent=(currentAccess.user.name||"PM").slice(0,2).toUpperCase();
       $("#staffAccessNav").hidden=!currentAccess.isOwner;
       $("#serverConnectionNav").hidden=!currentAccess.isOwner;
       $("#ownerConnectButton").hidden=!currentAccess.isOwner;
-      $$("[data-page='moderation'],[data-page='bans']").forEach(node=>node.hidden=!currentAccess.canModerate);
+      $$("#[data-page='moderation'],[data-page='bans']").forEach(node=>node.hidden=!currentAccess.canModerate);
       $("#page-moderation").querySelectorAll("[data-action-type='ban'],[data-action-type='unban']").forEach(node=>node.hidden=!currentAccess.canSenior);
       if(!currentAccess.canModerate)toast("You have dashboard access. Add the configured Discord Staff role to use moderation tools.","error");
       const wanted=location.hash.replace(/^#\/?/,"");
-      const route=wanted===""||wanted==="dashboard"?"overview":wanted;
+      const route=wanted===""||wanted==="dashboard"||wanted==="join"?"overview":wanted;
       showPage((route==="staff-access"&&!currentAccess.isOwner)||(route==="connection"&&!currentAccess.isOwner)||(route==="moderation"&&!currentAccess.canModerate)||(route==="bans"&&!currentAccess.canModerate)?"overview":route);
       loadHealth().then(connected=>{if(connected){loadServer();if(currentAccess.canModerate)loadBans();}});
     }catch(error){sessionStorage.removeItem("pm_discord_session");sessionToken="";currentAccess=null;displayGate(null,error.message);prepareSignIn();}
   }
+  function showEntryGate(){
+    $("#dashboardApp").hidden=true;
+    $("#accessGate").hidden=true;
+    $("#siteEntryGate").hidden=false;
+    const button=$("#entryContinueButton");
+    button.disabled=true;
+    button.textContent="Preparing security check…";
+    entryMessage("Complete the bot check each time you open staff or ER:LC dashboard access.");
+    renderCaptcha("entry").then(()=>{
+      if(!captchaTokens.entry)button.textContent="Complete the check to continue";
+    }).catch(error=>{
+      button.textContent="Verification unavailable";
+      entryMessage(error.message,true);
+    });
+  }
+  async function initializeAccess(){
+    const fragment=new URLSearchParams(location.hash.replace(/^#/, ""));
+    const returned=fragment.get("pm_session");
+    const loginFlow=Boolean(returned&&sessionStorage.getItem("pm_login_flow_started")==="1");
+    sessionStorage.removeItem("pm_login_flow_started");
+    if(returned){sessionToken=returned;sessionStorage.setItem("pm_discord_session",sessionToken);history.replaceState(null,"",location.pathname+location.search);}
+    else sessionToken=sessionStorage.getItem("pm_discord_session")||"";
+    if(sessionToken&&!loginFlow){showEntryGate();return;}
+    await loadDashboardAccess();
+  }
+  $("#entryContinueButton").addEventListener("click",async()=>{
+    const button=$("#entryContinueButton"),token=captchaTokens.entry;
+    if(!token){entryMessage("Complete the Cloudflare check before continuing.",true);return;}
+    button.disabled=true;button.textContent="Checking…";entryMessage("Verifying the security check…");
+    try{
+      await request("/security/entry","","POST",{turnstile_token:token});
+      resetCaptcha("entry");
+      $("#siteEntryGate").hidden=true;
+      await loadDashboardAccess();
+    }catch(error){
+      resetCaptcha("entry");
+      button.textContent="Complete the check to continue";
+      entryMessage(error.message,true);
+    }
+  });
   $("#submitJoinCode").addEventListener("click",async()=>{
     const button=$("#submitJoinCode"),code=$("#joinCodeInput").value.trim(),captcha=captchaTokens.join;if(!code)return gateMessage("Enter the join code from the server owner.",true);if(!captcha)return gateMessage("Complete the Cloudflare check before requesting access.",true);
     button.disabled=true;gateMessage("Sending your request…");
@@ -291,8 +355,8 @@
     catch(error){resetCaptcha("join");gateMessage(error.message,true);}
   });
   $("#joinCodeInput").addEventListener("keydown",event=>{if(event.key==="Enter")$("#submitJoinCode").click();});
-  $("#refreshAccess").addEventListener("click",initializeAccess);
-  async function signOut(){const token=sessionToken;sessionStorage.removeItem("pm_discord_session");sessionToken="";currentAccess=null;try{if(token)await callServer("logoutDashboard",token);}catch{}location.hash="";location.reload();}
+  $("#refreshAccess").addEventListener("click",loadDashboardAccess);
+  async function signOut(){const token=sessionToken;sessionStorage.removeItem("pm_login_flow_started");sessionStorage.removeItem("pm_discord_session");sessionToken="";currentAccess=null;try{if(token)await callServer("logoutDashboard",token);}catch{}location.hash="";location.reload();}
   $("#gateSignOut").addEventListener("click",signOut);$("#signOutButton").addEventListener("click",signOut);
   async function loadOwnerRequests(){
     if(!currentAccess||!currentAccess.isOwner)return;

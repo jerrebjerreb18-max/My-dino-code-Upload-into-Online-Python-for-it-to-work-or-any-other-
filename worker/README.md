@@ -15,8 +15,13 @@ Open the repository's **Settings → Secrets and variables → Actions → New r
 | `DISCORD_BOT_TOKEN` | The bot token from the Discord Developer Portal. |
 | `DISCORD_OAUTH_CLIENT_SECRET` | The OAuth client secret for application `1568360900648243281`. |
 | `ERLC_KEY_ENCRYPTION_SECRET` | A private random value at least 32 characters long. Keep a secure backup; losing it makes the encrypted ER:LC key unreadable. |
+| `TURNSTILE_SECRET_KEY` | The secret key from your Cloudflare Turnstile widget. This is saved as a GitHub Actions secret and deployed as a private Worker secret. |
 
 Do not paste these values into chat or into a repository file. The ER:LC server key is entered later in the dashboard and is encrypted by the Worker before database storage.
+
+### Cloudflare Turnstile setup
+
+Create a **Managed** Turnstile widget and allow only `potentialmillionaires.xyz` and `www.potentialmillionaires.xyz`. Put its public site key in `TURNSTILE_SITE_KEY` under `[vars]` in `worker/wrangler.toml`. Save the widget secret as the GitHub Actions repository secret `TURNSTILE_SECRET_KEY`. The deploy workflow installs that secret in the Worker and refuses to report the backend ready until both keys are present. Never put the secret in a website file, commit, or chat. The Worker verifies each single-use token server-side and checks the expected hostname and action.
 
 ### 2. Deploy from GitHub
 

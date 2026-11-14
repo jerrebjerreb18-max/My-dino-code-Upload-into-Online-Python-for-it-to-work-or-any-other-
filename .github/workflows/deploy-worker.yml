@@ -39,16 +39,18 @@ jobs:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_OAUTH_CLIENT_SECRET: ${{ secrets.DISCORD_OAUTH_CLIENT_SECRET }}
           ERLC_KEY_ENCRYPTION_SECRET: ${{ secrets.ERLC_KEY_ENCRYPTION_SECRET }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
         run: |
           set -eu
           missing=0
-          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID DISCORD_BOT_TOKEN DISCORD_OAUTH_CLIENT_SECRET ERLC_KEY_ENCRYPTION_SECRET; do
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID DISCORD_BOT_TOKEN DISCORD_OAUTH_CLIENT_SECRET ERLC_KEY_ENCRYPTION_SECRET TURNSTILE_SECRET_KEY; do
             case "$name" in
               CLOUDFLARE_API_TOKEN) value=$CLOUDFLARE_API_TOKEN ;;
               CLOUDFLARE_ACCOUNT_ID) value=$CLOUDFLARE_ACCOUNT_ID ;;
               DISCORD_BOT_TOKEN) value=$DISCORD_BOT_TOKEN ;;
               DISCORD_OAUTH_CLIENT_SECRET) value=$DISCORD_OAUTH_CLIENT_SECRET ;;
               ERLC_KEY_ENCRYPTION_SECRET) value=$ERLC_KEY_ENCRYPTION_SECRET ;;
+              TURNSTILE_SECRET_KEY) value=$TURNSTILE_SECRET_KEY ;;
             esac
             if [ -z "$value" ]; then
               echo "::error::Add the $name Actions secret before running this workflow."
@@ -85,12 +87,14 @@ jobs:
             DISCORD_BOT_TOKEN
             DISCORD_OAUTH_CLIENT_SECRET
             ERLC_KEY_ENCRYPTION_SECRET
+            TURNSTILE_SECRET_KEY
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_OAUTH_CLIENT_SECRET: ${{ secrets.DISCORD_OAUTH_CLIENT_SECRET }}
           ERLC_KEY_ENCRYPTION_SECRET: ${{ secrets.ERLC_KEY_ENCRYPTION_SECRET }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
-      - name: Verify the live Worker and Discord login URL
+      - name: Verify the live Worker and Turnstile configuration
         id: verify
         env:
           WORKER_URL: ${{ steps.worker.outputs.deployment-url }}
@@ -118,15 +122,12 @@ jobs:
           }
           if (!health || health.ready !== true) throw new Error("The deployed Worker did not become ready. Check the deployment logs and Cloudflare permissions.");
 
-          const returnTo = "https://potentialmillionaires.xyz/dashboard.html";
-          const loginResponse = await fetch(origin + "/auth/discord/url?return_to=" + encodeURIComponent(returnTo), { signal: AbortSignal.timeout(15000) });
-          const login = await loginResponse.json().catch(() => ({}));
-          if (!loginResponse.ok || !login.url) throw new Error("The Worker health check passed, but its Discord login URL endpoint failed: " + String(login.error || loginResponse.status));
-          const authorize = new URL(login.url);
-          const expectedRedirect = origin + "/auth/discord/callback";
-          if (authorize.hostname !== "discord.com" || authorize.searchParams.get("redirect_uri") !== expectedRedirect) {
-            throw new Error("The Worker returned an unexpected Discord OAuth URL.");
+          const captchaResponse = await fetch(origin + "/security/config", { signal: AbortSignal.timeout(10000) });
+          const captcha = await captchaResponse.json().catch(() => ({}));
+          if (!captchaResponse.ok || captcha.enabled !== true || !captcha.siteKey) {
+            throw new Error("The Worker is healthy, but Turnstile is not configured: " + String(captcha.error || captchaResponse.status));
           }
+          const expectedRedirect = origin + "/auth/discord/callback";
 
           await appendFile(process.env.GITHUB_OUTPUT, "worker_url=" + origin + "\n");
           await appendFile(process.env.GITHUB_STEP_SUMMARY, [
@@ -134,12 +135,12 @@ jobs:
             "",
             "- Worker: " + origin,
             "- Discord OAuth redirect URI: " + expectedRedirect,
-            "- The sign-in URL endpoint passed its live check.",
+            "- The Turnstile public configuration endpoint passed its live check.",
             "",
             "Add the exact redirect URI above in the Discord Developer Portal under OAuth2 → Redirects, then reload the dashboard.",
             "",
           ].join("\n"));
-          console.log("Worker health and Discord login URL checks passed.");
+          console.log("Worker health and Turnstile configuration checks passed.");
           NODE
 
       - name: Set the public dashboard backend URL

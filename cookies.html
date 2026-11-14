@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://potential-millionaires-erlc-api.jerrebjerreb18.workers.dev https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; form-action 'self'; upgrade-insecure-requests"><meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="theme-color" content="#11130f">
   <meta name="description" content="Cookie and browser storage information for Potential Millionaires.">
   <link rel="canonical" href="https://potentialmillionaires.xyz/cookies.html">
@@ -26,25 +26,26 @@
     <p class="legal-meta">Last updated: 14 November 2026</p>
     <article class="legal-content">
       <h2>1. Cookies and similar technologies</h2>
-      <p>The current site code does not set HTTP cookies for analytics, advertising, or social-media tracking. It does use local storage and session storage. These are similar browser technologies and may be treated like cookies under applicable rules, including Belgian guidance, so we disclose them here.</p>
+      <p>The current site code does not set HTTP cookies for analytics, advertising, or social-media tracking. It does use local storage and session storage. Cloudflare Turnstile may use browser storage, such as cookies or local storage, to keep its security challenge working. It is loaded only on dashboard sign-in and moderator-code screens and is not used for ads or analytics. These are similar browser technologies and may be treated like cookies under applicable rules, including Belgian guidance, so we disclose them here.</p>
       <p>When you leave our site to sign in with Discord or use another provider, that provider may use its own cookies or similar technologies on its service. We do not control those providers’ storage or privacy settings.</p>
 
       <h2>2. Storage used by this site</h2>
       <ul>
         <li><strong>Essential — privacy choice:</strong> local storage remembers whether you selected “Accept preferences” or “Essential only.” The choice expires after 180 days so the site can remember your privacy setting.</li>
         <li><strong>Essential — dashboard sign-in:</strong> session storage holds the temporary Discord dashboard session in the browser session. The server-side session expires within six hours, and signing out asks the server to remove it.</li>
+        <li><strong>Essential — bot protection:</strong> Cloudflare Turnstile may use browser storage while checking sign-in and moderator-code requests. Cloudflare controls that challenge storage under its own privacy notice.</li>
         <li><strong>Functional preference — dashboard address:</strong> the backend address you enter is held in session storage by default. If you select “Accept preferences,” the dashboard may remember that address in local storage on that browser. Choose “Essential only” to keep it only in session storage.</li>
         <li><strong>Dashboard activity:</strong> the dashboard may keep up to eight recent action messages in session storage so you can see results while using it. This is not sent to an analytics provider and is cleared when the session ends or the storage is cleared.</li>
       </ul>
 
       <h2>3. Categories we do not use</h2>
-      <p>We do not use analytics, audience-measurement, marketing, advertising, retargeting, or social-media tracking cookies. The website does not contain an advertising pixel or Google Maps embed.</p>
+      <p>We do not use analytics, audience-measurement, marketing, advertising, retargeting, or social-media tracking cookies. Cloudflare Turnstile is a security check, not an advertising or analytics tracker. The website does not contain an advertising pixel or Google Maps embed.</p>
 
       <h2>4. Your choice</h2>
       <p>Choose “Essential only” to avoid persistent storage of the dashboard address. You can revisit <a href="index.html">the home page</a> and use “Cookie choices” in the footer to change your choice. The choice control is available without blocking access to the site. You can also clear local or session storage in your browser settings. Removing the dashboard session may sign you out; clearing the saved backend address means you will need to enter it again.</p>
 
       <h2>5. Providers and server logs</h2>
-      <p>GitHub Pages and Cloudflare provide hosting and backend services. They may process technical request data, such as IP address, browser information, requested URL, and request time, for delivery, security, and operation of their services. We do not use that information for advertising or site analytics.</p>
+      <p>GitHub Pages and Cloudflare provide hosting and backend services. They may process technical request data, such as IP address, browser information, requested URL, and request time, for delivery, security, and operation of their services. Cloudflare’s <a href="https://www.cloudflare.com/turnstile-privacy-policy/" rel="noopener noreferrer">Turnstile Privacy Addendum</a> explains the signals used for its security challenge. We do not use that information for advertising or site analytics.</p>
 
       <h2>6. Contact</h2>
       <p>For questions about browser storage or a privacy request, email <a href="mailto:potentialmillionairesofficial@gmail.com">potentialmillionairesofficial@gmail.com</a> or contact Potential Millionaires through our <a data-config-link="discordInviteUrl" data-unavailable-label="Discord support server" href="index.html#community">Discord support server</a> and open a private support ticket.</p>

@@ -1,5 +1,6 @@
 const DISCORD_API = "https://discord.com/api/v10";
 const ERLC_API = "https://api.erlc.gg";
+const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 const DEFAULT_LOG_CHANNEL = "1568344574714191882";
 const DEFAULT_STAFF_ROLE = "1568344466375442604";
 const DEFAULT_HR_ROLE = "1568344448612569119";
@@ -26,6 +27,66 @@ function json(data, status = 200, headers = {}) {
       ...headers,
     },
   });
+}
+
+async function readJson(request, maxBytes = 4096) {
+  const declaredLength = Number(request.headers.get("content-length") || 0);
+  if (declaredLength > maxBytes) throw new HttpError(413, "The request is too large.");
+  if (!(request.headers.get("content-type") || "").toLowerCase().startsWith("application/json")) {
+    throw new HttpError(415, "Send this request as JSON.");
+  }
+  const reader = request.body?.getReader();
+  if (!reader) return {};
+  const chunks = [];
+  let totalBytes = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    totalBytes += value.byteLength;
+    if (totalBytes > maxBytes) {
+      await reader.cancel();
+      throw new HttpError(413, "The request is too large.");
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  let text;
+  try { text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); }
+  catch { throw new HttpError(400, "Request body must be valid UTF-8 JSON."); }
+  try { return text ? JSON.parse(text) : {}; }
+  catch { throw new HttpError(400, "Invalid request body."); }
+}
+
+function turnstileConfigured(env) {
+  return Boolean(String(env.TURNSTILE_SITE_KEY || "").trim() && String(env.TURNSTILE_SECRET_KEY || "").trim());
+}
+
+async function verifyTurnstile(env, token, expectedAction) {
+  const siteKey = String(env.TURNSTILE_SITE_KEY || "").trim();
+  const secret = String(env.TURNSTILE_SECRET_KEY || "").trim();
+  if (!siteKey || !secret) throw new HttpError(503, "Cloudflare bot verification is not configured. The owner must finish Turnstile setup before continuing.");
+  const responseToken = String(token || "").trim();
+  if (!responseToken || responseToken.length > 2048 || /[\r\n\u0000-\u001f]/.test(responseToken)) {
+    throw new HttpError(400, "Complete the Cloudflare bot check and try again.");
+  }
+  let response;
+  try {
+    response = await fetch(TURNSTILE_VERIFY_URL, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ secret, response: responseToken, idempotency_key: randomHex(16) }),
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch {
+    throw new HttpError(503, "Cloudflare bot verification is temporarily unavailable. Please try again.");
+  }
+  const result = parseJson(await response.text(), {});
+  const allowedHostnames = new Set(["potentialmillionaires.xyz", "www.potentialmillionaires.xyz"]);
+  if (!response.ok || result.success !== true || !allowedHostnames.has(String(result.hostname || "")) || String(result.action || "") !== expectedAction) {
+    throw new HttpError(403, "Cloudflare could not verify this request. Complete a fresh bot check and try again.");
+  }
 }
 
 function html(message, status = 400) {
@@ -248,17 +309,18 @@ function accessSummary(session) {
   };
 }
 
-async function createDiscordLoginUrl(request, env) {
+async function createDiscordLoginUrl(request, env, body) {
   await requireDatabase(env);
   const clientId = String(env.DISCORD_OAUTH_CLIENT_ID || "1568360900648243281").trim();
   const clientSecret = String(env.DISCORD_OAUTH_CLIENT_SECRET || "").trim();
   const apiOrigin = new URL(request.url).origin;
   if (!clientId || !clientSecret) throw new HttpError(503, "The owner must configure DISCORD_OAUTH_CLIENT_SECRET in the backend before Discord sign-in can work.");
   const url = new URL(request.url);
-  const returnTo = String(url.searchParams.get("return_to") || "");
+  const returnTo = String(body.return_to || "");
   let target;
   try { target = new URL(returnTo); } catch { throw new HttpError(400, "The dashboard return URL is invalid."); }
   if (!allowedOrigins(env).has(target.origin) || target.pathname !== "/dashboard.html" || target.search) throw new HttpError(400, "The dashboard return URL is not on the approved site list.");
+  await verifyTurnstile(env, body.turnstile_token, "dashboard_login");
   const state = randomHex(24);
   await env.DB.prepare("INSERT INTO oauth_states (state_hash, return_to, expires_at, consumed_at) VALUES (?, ?, ?, NULL)").bind(await sha256Hex(state), target.origin + target.pathname, Date.now() + 10 * 60 * 1000).run();
   const redirectUri = apiOrigin + "/auth/discord/callback";
@@ -405,7 +467,8 @@ async function handleApi(request, env, url) {
     const session = await getSession(request, env);
     if (session.isOwner) return json({ ok: true, status: "owner", message: "You are the server owner." });
     if (session.isApproved) return json({ ok: true, status: "approved", message: "Your dashboard access is already active." });
-    const body = await request.json().catch(() => ({}));
+    const body = await readJson(request, 4096);
+    await verifyTurnstile(env, body.turnstile_token, "moderator_join");
     const code = String(body.code || "").trim().toUpperCase();
     if (!/^[A-Z0-9-]{3,20}$/.test(code)) throw new HttpError(400, "Enter a 3–20 character join code using letters, numbers, or hyphens.");
     const now = Date.now();
@@ -452,7 +515,7 @@ async function handleApi(request, env, url) {
   const requestMatch = url.pathname.match(/^\/api\/membership\/requests\/(\d{15,22})$/);
   if (request.method === "POST" && requestMatch) {
     const owner = await requireOwner(request, env);
-    const body = await request.json().catch(() => ({}));
+    const body = await readJson(request, 4096);
     const decision = String(body.decision || "");
     if (decision !== "approve" && decision !== "deny") throw new HttpError(400, "Choose approve or deny.");
     const memberRequest = await env.DB.prepare("SELECT user_id, name FROM moderator_requests WHERE user_id = ?").bind(requestMatch[1]).first();
@@ -479,7 +542,7 @@ async function handleApi(request, env, url) {
 
   if (request.method === "POST" && url.pathname === "/api/erlc/key") {
     const owner = await requireOwner(request, env);
-    const body = await request.json().catch(() => ({}));
+    const body = await readJson(request, 4096);
     const key = String(body.server_key || "").trim();
     if (!key) throw new HttpError(400, "Paste your ER:LC private-server API key first.");
     if (key.length > 512 || /[\r\n\u0000-\u001f]/.test(key)) throw new HttpError(400, "That does not look like a valid single-line API key.");
@@ -511,7 +574,7 @@ async function handleApi(request, env, url) {
   }
   if (request.method === "POST" && url.pathname === "/api/command") {
     if (Number(request.headers.get("content-length") || 0) > 4096) throw new HttpError(413, "The request is too large.");
-    const body = await request.json().catch(() => { throw new HttpError(400, "Invalid request body."); });
+    const body = await readJson(request, 4096);
     const action = String(body.action || "");
     const actor = action === "ban" || action === "unban" ? await requireSenior(request, env) : await requireModerator(request, env);
     const id = String(body.roblox_id || "").trim();
@@ -556,10 +619,15 @@ async function handleRequest(request, env) {
   }
   const origin = request.headers.get("origin") || "";
   if (origin && !allowedOrigins(env).has(origin)) return json({ error: "This website origin is not allowed." }, 403);
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method) && !allowedOrigins(env).has(origin)) return json({ error: "This website origin is not allowed." }, 403);
   if (request.method === "GET" && url.pathname === "/health") {
-    return json({ ok: true, service: "Potential Millionaires ER:LC API", ready: Boolean(env.DB && env.DISCORD_OAUTH_CLIENT_SECRET && env.DISCORD_BOT_TOKEN && env.ERLC_KEY_ENCRYPTION_SECRET) });
+    return json({ ok: true, service: "Potential Millionaires ER:LC API", ready: Boolean(env.DB && env.DISCORD_OAUTH_CLIENT_SECRET && env.DISCORD_BOT_TOKEN && env.ERLC_KEY_ENCRYPTION_SECRET && turnstileConfigured(env)) });
   }
-  if (request.method === "GET" && url.pathname === "/auth/discord/url") return json(await createDiscordLoginUrl(request, env));
+  if (request.method === "GET" && url.pathname === "/security/config") {
+    if (!turnstileConfigured(env)) throw new HttpError(503, "Cloudflare bot verification is not configured yet. Sign-in is paused until Turnstile is connected.");
+    return json({ enabled: true, siteKey: String(env.TURNSTILE_SITE_KEY).trim() });
+  }
+  if (request.method === "POST" && url.pathname === "/auth/discord/url") return json(await createDiscordLoginUrl(request, env, await readJson(request, 4096)));
   if (request.method === "GET" && url.pathname === "/auth/discord/callback") return discordOAuthCallback(request, env);
   if (!url.pathname.startsWith("/api/")) return json({ error: "This backend serves API routes only. Open the GitHub Pages dashboard." }, 404);
   return handleApi(request, env, url);
@@ -578,7 +646,11 @@ export default {
     const merged = new Headers(response.headers);
     for (const [key, value] of Object.entries(headers)) merged.set(key, value);
     merged.set("x-content-type-options", "nosniff");
-    merged.set("referrer-policy", "same-origin");
+    merged.set("referrer-policy", "no-referrer");
+    merged.set("strict-transport-security", "max-age=31536000");
+    merged.set("x-frame-options", "DENY");
+    merged.set("permissions-policy", "camera=(), microphone=(), geolocation=()");
+    merged.set("content-security-policy", "default-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; style-src 'unsafe-inline'");
     return new Response(response.body, { status: response.status, statusText: response.statusText, headers: merged });
   },
 };

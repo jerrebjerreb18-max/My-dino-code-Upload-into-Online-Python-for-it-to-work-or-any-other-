@@ -244,7 +244,7 @@ h3 { line-height: 1.25; }
 .studio-site .cookie-button { font-size: .85rem; }
 .studio-site .cookie-button-secondary { background: #304b29; border-color: #869d7b; }
 
-@media (max-width: 57.5rem) {
+@media (max-width: 60rem) {
   .header-row { gap: .6rem; }
   .menu-toggle {
     order: 3;

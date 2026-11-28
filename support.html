@@ -46,16 +46,17 @@
         <a href="#private-ticket"><strong>Open a private ticket</strong><span>Ask for help from the support team</span></a>
         <a href="#report"><strong>Report a user or issue</strong><span>Send a report directly to staff</span></a>
         <a href="#application"><strong>Apply for staff</strong><span>Check what you’ll need to get started</span></a>
+        <a href="#report-status"><strong>Check your report status</strong><span>See the status of your submitted reports privately</span></a>
       </nav>
     </section>
 
     <section class="support-library" aria-labelledby="guide-title">
       <h2 id="guide-title">Guides and commands</h2>
-      <p class="support-library-intro">Use slash commands in Discord. Availability depends on your server and role.</p>
+      <p class="support-library-intro">Use slash commands in Discord. Availability depends on your server and role. The status checks, support links, and staff tools below require the CommunityDesk Support Update.</p>
       <div class="support-controls" id="support-controls" hidden>
         <div class="support-query">
           <label for="guide-search">Search guides</label>
-          <input id="guide-search" type="search" maxlength="100" placeholder="Try report, tickets, or roles" autocomplete="off">
+          <input id="guide-search" type="search" maxlength="100" placeholder="Try reports, ticket queue, or cleanup" autocomplete="off">
         </div>
         <div class="support-filter">
           <label for="guide-topic">Topic</label>
@@ -65,6 +66,7 @@
             <option value="reports">Reports</option>
             <option value="community">Community tools</option>
             <option value="staff">Staff applications</option>
+            <option value="operations">Staff support tools</option>
           </select>
         </div>
         <p class="support-count" id="guide-count" role="status"></p>
@@ -91,10 +93,20 @@
           <div class="support-command"><code>/report-attachment</code><button type="button" class="button button-outline" data-copy-command aria-label="Copy /report-attachment" hidden>Copy</button></div>
           <p>Use the report number from your private receipt and attach the relevant screenshot or recording. Share evidence through the private report flow.</p>
         </article>
+        <article class="support-guide" id="report-status" data-topic="reports" data-search="my reports report status receipt queued claimed follow up">
+          <div class="support-guide-heading"><h3>Check your report status</h3><a href="#report-status" aria-label="Link to Check your report status">Guide link</a></div>
+          <div class="support-command"><code>/my-reports</code><button type="button" class="button button-outline" data-copy-command aria-label="Copy /my-reports" hidden>Copy</button></div>
+          <p>See the status of your recent reports in the server where you submitted them. Only you can see the reply.</p>
+        </article>
         <article class="support-guide" id="bot-help" data-topic="community" data-search="guide command examples permission access">
           <div class="support-guide-heading"><h3>Open the bot’s command guide</h3><a href="#bot-help" aria-label="Link to Open the bot’s command guide">Guide link</a></div>
           <div class="support-command"><code>/help</code><button type="button" class="button button-outline" data-copy-command aria-label="Copy /help" hidden>Copy</button></div>
           <p>See command examples and who can use them. <code>/commands</code> also opens the guide.</p>
+        </article>
+        <article class="support-guide" id="support-links" data-topic="community" data-search="contact get help support links policies privacy">
+          <div class="support-guide-heading"><h3>Find support links in Discord</h3><a href="#support-links" aria-label="Link to Find support links in Discord">Guide link</a></div>
+          <div class="support-command"><code>/support-links</code><button type="button" class="button button-outline" data-copy-command aria-label="Copy /support-links" hidden>Copy</button></div>
+          <p>Find the server’s support panel and private report command. In Potential Millionaires, the reply also links to this guide, staff applications, and policies.</p>
         </article>
         <article class="support-guide" id="roles" data-topic="community" data-search="colors notification role permissions">
           <div class="support-guide-heading"><h3>Pick optional roles</h3><a href="#roles" aria-label="Link to Pick optional roles">Guide link</a></div>
@@ -115,6 +127,28 @@
             <li>Prepare a short example of how you’ve helped a community or handled a difficult situation.</li>
           </ul>
           <p class="checklist-count" id="checklist-count" role="status" hidden></p>
+        </article>
+        <article class="support-guide" id="application-status" data-topic="staff" data-search="my application status draft submitted accepted denied decision">
+          <div class="support-guide-heading"><h3>Check your staff application</h3><a href="#application-status" aria-label="Link to Check your staff application">Guide link</a></div>
+          <div class="support-command"><code>/my-application</code><button type="button" class="button button-outline" data-copy-command aria-label="Copy /my-application" hidden>Copy</button></div>
+          <p>See the status of your latest application privately in the Potential Millionaires Discord.</p>
+        </article>
+        <article class="support-guide" id="ticket-operations" data-topic="operations" data-search="ticketops ticket queue status workload assignment unassign release priority staff notes">
+          <div class="support-guide-heading"><h3>Manage the ticket queue</h3><a href="#ticket-operations" aria-label="Link to Manage the ticket queue">Guide link</a></div>
+          <div class="support-command"><code>/ticketops queue</code><button type="button" class="button button-outline" data-copy-command aria-label="Copy /ticketops queue" hidden>Copy</button></div>
+          <p>Ticket staff can filter open tickets by assignment or priority. Use <code>/ticketops workload</code> for team counts or <code>/ticketops status</code> for one ticket.</p>
+          <p>Use <code>/ticketops assign</code>, <code>/ticketops release</code>, and <code>/ticketops priority</code> to organize work. Save a private handoff with <code>/ticketops note</code> and read it with <code>/ticketops notes</code>.</p>
+        </article>
+        <article class="support-guide" id="desk-tools" data-topic="operations" data-search="desk reports application backlog health setup status staff review transcripts">
+          <div class="support-guide-heading"><h3>Review backlogs and setup</h3><a href="#desk-tools" aria-label="Link to Review backlogs and setup">Guide link</a></div>
+          <div class="support-command"><code>/desk reports</code><button type="button" class="button button-outline" data-copy-command aria-label="Copy /desk reports" hidden>Copy</button></div>
+          <p>Potential Millionaires staff can review waiting reports and use <code>/desk applications</code> for the application backlog. <code>/desk health</code> checks the support channel, staff role, and private archive.</p>
+        </article>
+        <article class="support-guide" id="closed-ticket-cleanup" data-topic="operations" data-search="closed tickets delete remove bulk purge clear archived cleanup transcript">
+          <div class="support-guide-heading"><h3>Review closed-ticket cleanup</h3><a href="#closed-ticket-cleanup" aria-label="Link to Review closed-ticket cleanup">Guide link</a></div>
+          <div class="support-command"><code>/closed-tickets</code><button type="button" class="button button-outline" data-copy-command aria-label="Copy /closed-tickets" hidden>Copy</button></div>
+          <p>In Potential Millionaires, this previews eligible closed tickets for members with <strong>The Potentials</strong> role or Discord Administrator permission. Set <code>prepare</code> to <code>True</code> to request confirmation, or select the bot’s Discord mention and send <code>@Millionaire Bot delete all closed tickets</code>.</p>
+          <p>Review the list before selecting <strong>Delete listed tickets</strong>. Only the requester can confirm. The bot checks that each channel is a closed ticket with a verified archived transcript.</p>
         </article>
       </div>
       <div class="support-empty" id="guide-empty" hidden>
